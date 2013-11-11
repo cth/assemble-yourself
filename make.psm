@@ -1,0 +1,35 @@
+% Make genome:
+:- [util].
+
+values(base,[a,g,c,t]).
+
+#make_genome(Genome,Size,MustContainProtein,Reverse) :-
+#	Length is 
+#	make_part
+#	make_genome_rec(
+
+values(mutate_aa_base(_),[a,g,c,t]).
+
+: set
+
+mutate_protein(Protein,MutatedProtein) :-
+	dna_translate(11,DNA,Protein),
+	mutate_protein_dna(DNA,MutatedDNA),
+	dna_translate(11,MutatedDNA,MutatedProtein).
+
+values(mutate_triplet(synonymous,T1),Values) :-
+	findall(T2,synonous(T1,T2),Values).
+values(mutate_triplet(nonsynonymous,T1),Values) :-
+	findall(T2,(amino_acidsynonous(T1,T2),Values).
+
+
+mutate_triplet(T1,T2) :-
+	msw(synonymous_triplet_mutation,Syn),
+	msw(mutate_triplet(Syn,T1),T2).
+
+mutate_protein_dna([X1,X2,X3|Xs],[Y1,Y2,Y3|Ys]) :-
+	
+	genecode
+
+
+
