@@ -231,6 +231,7 @@ reads_to_latex(Reads,ReadLen,Genome,Alignment,ORF) :-
 
 	writeln('\\documentclass{article}'),
 	writeln('\\usepackage[a4paper,landscape,margin=0.1cm]{geometry}'),
+	writeln('\\usepackage{rotating}'),
 	writeln('\\begin{document}'),
 	writeln('\\large'),
 
@@ -327,6 +328,11 @@ reads_to_latex(Reads,ReadLen,Genome,Alignment,ORF) :-
 		writeln('\\end{tabular}'),
 		writeln('\\newline'),writeln('\\medskip'),writeln('\\noindent'))
 	),
+
+	writeln('\\newpage'),
+	writeln('\\section*{Amino Acid translation table}'),
+	writeln('\\input{aminoacids.tex}'),
+
 	writeln('\\end{document}').
 
 upcase(a,'A').
