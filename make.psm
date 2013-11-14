@@ -4,70 +4,137 @@
 :- [dnaseq].
 
 values(base,[a,g,c,t]).
-values(mutate_base(a), [a,g,c,t], [0.94,0.02,0.02,0.02]).
-values(mutate_base(g), [g,c,t,a], [0.94,0.02,0.02,0.02]).
-values(mutate_base(c), [c,t,a,g], [0.94,0.02,0.02,0.02]).
-values(mutate_base(t), [t,a,g,c], [0.94,0.02,0.02,0.02]).
-
-%%
-% Probabilistic parameters for amino acid mutations 
-% 
-
+values(mutate_base(a), [a,g,c,t], [0.97,0.01,0.01,0.01]).
+values(mutate_base(g), [g,c,t,a], [0.97,0.01,0.01,0.01]).
+values(mutate_base(c), [c,t,a,g], [0.97,0.01,0.01,0.01]).
+values(mutate_base(t), [t,a,g,c], [0.97,0.01,0.01,0.01]).
 values(protein_mutation,[yes,no],[0.1,0.9]).
-values(synonymous_triplet_mutation,[synonymous,nonsynonymous]).
+values(synonymous_triplet_mutation,[synonymous,nonsynonymous],[0.8,0.2]).
 values(mutate_triplet(synonymous,T1),Values) :-
 	findall(T2,syn(T1,T2),Values).
 values(mutate_triplet(nonsynonymous,T1),Values) :-
 	findall(T2,nonsyn(T1,T2),Values).
+values(start_codon,Codons) :-
+	findall(Codon,genecode_start_codon(11,Codon),Codons).
+values(stop_codon,Codons) :-
+	findall(Codon,genecode_stop_codon(11,Codon),Codons).
 
-:- set_sw(synonymous_triplet_mutation,[0.8,0.2]).
-
-%:- forall(triplet(set_sw(mutate_triplet(synonymous,_),uniform). 
-
-make_genome(Genome,Size,MustContainProtein,Reverse) :-
-	translate(11,ProtDNA,MustContainProtein),
-	mutate_protein_dna(ProtDNA,ProtMutantDNA),
-	translate(11,ProtMutantDNA,MutantProtein),
-	write('Mutant protein is: '), writeln(MutantProtein),
-	length(ProtMutantDNA,ProtMutDNALength),
-	Length is Size - ProtMutDNALength, 
+make_genome(Genome,Size,BuriedProteinDNA,GenomeProtKey) :-
+	msw(start_codon,StartCodon),
+	msw(stop_codon,StopCodon),
+	append(StartCodon,BuriedProteinDNA,StartORF),
+	append(StartORF,StopCodon,ORF),
+	length(ORF,ORFLength),
+	Length is Size - ORFLength, 
 	length(DNASeq,Length),
 	random_dna(Length,DNASeq),
 	random_split_seq(DNASeq,DNA1,DNA2),
-	append(DNA1,ProtMutantDNA,Part1),
+	append(DNA1,ORF,Part1),
 	append(Part1,DNA2,Genome),
-	writeln(Genome).
+	length(DNA1,L1),
+	length(DNA2,L2),
+	rep(L1,'-',K1),
+	rep(L2,'-',K2),
+	append(K1,ORF,Tmp1),
+	append(Tmp1,K2,GenomeProtKey).
 
-make_reads(Genome,ReadSize,MinDepth,MaxDepth,ReadsOut) :-
+make_reads(Genome,ReadSize,MinDepth,DepthsOut,ReadsOut,Alignment) :-
 	length(Genome,L),
 	rep(L,0,DepthsIn),
-	writeln(depths_in(DepthsIn)),
-	make_reads_rec(Genome,ReadSize,MinDepth,DepthsIn,DepthsOut,[],ReadsOut1),
-	(forall(member(D,DepthsOut), (D =< MaxDepth)) -> 
-		writeln(depths(DepthsOut)),
-		ReadsOut = ReadsOut1,
-		forall(member(R,ReadsOut),writeln(R))
-		;
-		make_reads(Genome,ReadSize,MinDepth,MaxDepth,ReadsOut)).
-	
+	make_reads_rec(Genome,ReadSize,MinDepth,DepthsIn,DepthsOut,[],ReadsOut,[],Alignment).
+%	ReadsOut = ReadsOut1.
+%		forall(member(R,ReadsOut),writeln(R))
+%
+%	(forall(member(D,DepthsOut), (D =< MaxDepth)) -> 
+%		writeln(depths(DepthsOut)),
+%		ReadsOut = ReadsOut1,
+%		forall(member(R,ReadsOut),writeln(R))
+%		;
+%		make_reads(Genome,ReadSize,MinDepth,MaxDepth,ReadsOut,Consensus)).
 
-
-make_reads_rec(Genome,ReadSize,MinDepth,DepthsInOut,DepthsInOut,ReadsInOut,ReadsInOut) :-
+make_reads_rec(_Genome,_ReadSize,MinDepth,DepthsInOut,DepthsInOut,ReadsInOut,ReadsInOut,Consensus,Consensus) :-
 	forall(member(DI,DepthsInOut), DI >= MinDepth).
-make_reads_rec(Genome,ReadSize,MinDepth,DepthsIn,DepthsOut,ReadsIn,ReadsOut) :-
-	writeln(random_read(Genome,DepthsIn,ReadSize,Read,ReadPos)),
+make_reads_rec(Genome,ReadSize,MinDepth,DepthsIn,DepthsOut,ReadsIn,ReadsOut,AlignIn,AlignOut) :-
+	%writeln(random_read(Genome,DepthsIn,ReadSize,Read,ReadPos)),
 	random_read(Genome,DepthsIn,ReadSize,Read,ReadPos),
-	writeln(here2),
+	%writeln(here2),
 	length(Genome,GenomeLength),
 	ReadStart is ReadPos,
 	ReadEnd is ReadPos + ReadSize,
-	writeln(read_vector),
-	writeln(read_vector(1,GenomeLength,ReadStart,ReadEnd,ReadVector)),
+	%writeln(read_vector),
+	%writeln(read_vector(1,GenomeLength,ReadStart,ReadEnd,ReadVector)),
 	read_vector(0,GenomeLength,ReadStart,ReadEnd,ReadVector),
 	add_vectors(DepthsIn,ReadVector,NewDepthsIn),
-	writeln(NewDepthsIn),
+	%writeln(start(readalign)),
+	%writeln(read_align(0,GenomeLength,ReadStart,ReadEnd,ReadAlign,Read)),
+	read_align(0,GenomeLength,ReadStart,ReadEnd,ReadAlign,Read),
+	%writeln(stop(readalign)),
+	%make_consensus_sequence(ReadAlign,ConsensusIn,ConsensusCurrent),
+	%writeln(NewDepthsIn),
 	!,
-	make_reads_rec(Genome,ReadSize,MinDepth,NewDepthsIn,DepthsOut,[ReadVector|ReadsIn],ReadsOut).
+	make_reads_rec(Genome,ReadSize,MinDepth,NewDepthsIn,DepthsOut,[Read|ReadsIn],ReadsOut,[ReadAlign|AlignIn],AlignOut).
+
+
+make_consensus_sequence([],[],[]).
+make_consensus_sequence(['*'|Xs],[Y|Ys],[Y|Zs]) :-
+	make_consensus_sequence(Xs,Ys,Zs).
+make_consensus_sequence([X|Xs],['*'|Ys],[X|Zs]) :-
+	make_consensus_sequence(Xs,Ys,Zs).
+make_consensus_sequence([X|Xs],[Y|Ys],[Z|Zs]) :-
+	iupac_consensus(X,Y,Z),
+	make_consensus_sequence(Xs,Ys,Zs).
+
+iupac_consensus(IUPAC1,IUPAC2,Consensus) :-
+	iupac(Bases1,IUPAC1),
+	iupac(Bases2,IUPAC2),
+	append(Bases1,Bases2,Bases),
+	eliminate_duplicate(Bases,SetBases),
+	sort(SetBases,SetBasesSort),
+	iupac(SetBasesSort,Consensus).
+	
+
+% IUPAC relations:
+iupac([a],a).
+iupac([c],c).
+iupac([g],g).
+iupac([t],t).
+iupac([a,g],r).
+iupac([c,t],y).
+iupac([c,g],s).
+iupac([a,t],w).
+iupac([g,t],k).
+iupac([a,c],m).
+iupac([c,g,t],b).
+iupac([a,g,t],d).
+iupac([a,c,t],h).
+iupac([a,c,g],v).
+iupac([a,c,g,t],n).
+
+make_consensus_sequence([],[],[]).
+make_consensus_sequence(['*'|Xs],[Y|Ys],[Y|Zs]) :-
+	make_consensus_sequence(Xs,Ys,Zs).
+make_consensus_sequence([X|Xs],['*'|Ys],[X|Zs]) :-
+	make_consensus_sequence(Xs,Ys,Zs).
+make_consensus_sequence([X|Xs],[Y|Ys],[Z|Zs]) :-
+	iupac_consensus(X,Y,Z),
+	make_consensus_sequence(Xs,Ys,Zs).
+
+
+read_align(G,G,_,_,[],[]).
+read_align(N,G,ReadStart,ReadEnd,['.'|Xs],Read) :-
+	N < ReadStart,
+	N1 is N + 1,
+	read_align(N1,G,ReadStart,ReadEnd,Xs,Read).
+read_align(N,G,ReadStart,ReadEnd,['.'|Xs],Read) :-
+	N >= ReadEnd,
+	N1 is N + 1,
+	read_align(N1,G,ReadStart,ReadEnd,Xs,Read).
+read_align(N,G,ReadStart,ReadEnd,[X|Xs],[X|Ys]) :-
+	N >= ReadStart,
+	N < ReadEnd,
+	N1 is N + 1,
+	read_align(N1,G,ReadStart,ReadEnd,Xs,Ys).
+
 
 read_vector(G,G,_,_,[]).
 read_vector(N,G,ReadStart,ReadEnd,[0|Xs]) :-
@@ -75,12 +142,12 @@ read_vector(N,G,ReadStart,ReadEnd,[0|Xs]) :-
 	N1 is N + 1,
 	read_vector(N1,G,ReadStart,ReadEnd,Xs).
 read_vector(N,G,ReadStart,ReadEnd,[0|Xs]) :-
-	N > ReadEnd,
+	N >= ReadEnd,
 	N1 is N + 1,
 	read_vector(N1,G,ReadStart,ReadEnd,Xs).
 read_vector(N,G,ReadStart,ReadEnd,[1|Xs]) :-
 	N >= ReadStart,
-	N =< ReadEnd,
+	N < ReadEnd,
 	N1 is N + 1,
 	read_vector(N1,G,ReadStart,ReadEnd,Xs).
 
@@ -95,16 +162,6 @@ rep(N,X,[X|Xs]) :-
 	rep(N1,X,Xs).
 
 %% Normalize a set of depths to yield inverse proportional probabilities
-%inverse_depths_probs(Depths,Probs) :-
-%	length(Depths,L),
-%	rep(L,0.01,PseudoCounts),
-%	add_vectors(Depths,PseudoCounts,Perturbed),
-%	sumlist(Perturbed,Total),
-%%	findall(W,(member(D,Perturbed), W is 1 - (D / Total)),Weights),
-%	%writeln(Weights),
-%	sumlist(Weights,TotalWeights),
-%	findall(P,(member(W,Weights), P is W / TotalWeights),Probs).
-%	%writeln(Probs).
 inverse_depths_probs(Depths,Probs) :-
 	sumlist(Depths,0),!,
 	length(Depths,L),
@@ -114,8 +171,6 @@ inverse_depths_probs(Depths,Probs) :-
 inverse_depths_probs(Depths,Probs) :-
 	sumlist(Depths,Total),
 	findall(P,(member(D,Depths), P is D / Total),Probs).
-
-	
 
 % FIXME: Make read probability proportional with Depth
 random_read(Genome,Depths,ReadSize,Read,ReadPos) :-
@@ -137,9 +192,7 @@ random_split_seq_min_weighted(Seq, Part1, Part2,ReadSize,Depths) :-
 		append(C3,_,Depths),
 		D2 is 1/(min(C2)+0.001)),
 	DepthWeights),
-	writeln(DepthWeights),
 	inverse_depths_probs(DepthWeights,Probs),
-	writeln(probs(Probs)),
 	random_select(AllLen,Probs,L1),
 	L #= L1+L2,
 	length(Part2,L2),
@@ -165,6 +218,125 @@ mutate_protein_dna([X1,X2,X3|Xs],[Y1,Y2,Y3|Ys]) :-
 	mutate_triplet([X1,X2,X3],[Y1,Y2,Y3]),
 	mutate_protein_dna(Xs,Ys).
 
+write_fasta(_,[]).
+write_fasta(N,[R|Rs]) :-
+	write('>'),
+	writeln(N),
+	forall(member(X,R),write(X)),nl,
+	N1 is N + 1,
+	write_fasta(N1,Rs).
+
+reads_to_latex(Reads,ReadLen,Genome,Alignment,ORF) :-
+	length(Genome,GenomeLen),
+
+	writeln('\\documentclass{article}'),
+	writeln('\\usepackage[a4paper,landscape,margin=0.1cm]{geometry}'),
+	writeln('\\begin{document}'),
+	writeln('\\large'),
+
+	writeln('\\section*{Solution:}'),
+	write('\\begin{tabular}{'),
+	foreach(I in 1..GenomeLen, write('|p{0.3cm}')),
+	writeln('|}'),
+
+	writeln('\\hline'),
+	append(O1,[O2],ORF),
+	forall(member(O,O1),(upcase(O,O_UP), write(O_UP), write('& '))),
+	upcase(O2,O2_UP),write('\\textbf{'),write(O2_UP),write('}'),writeln('\\\\'),
+	writeln('\\hline'),
+
+	writeln('\\hline'),
+	forall(member(A,Alignment),(
+		append(A1,[A2],A),
+		forall(member(B,A1),(upcase(B,C), write(C), write('& '))),
+		upcase(A2,A2_UP), write(A2_UP), writeln('\\\\'),
+		writeln('\\hline')
+	)),
+
+	writeln('\\end{tabular}'),
+
+	writeln('\\newpage'),
+
+	%writeln('\\section*{Scaffold}'),
+	write('\\begin{tabular}{'),
+	foreach(I in 1..GenomeLen, write('|p{0.3cm}')),
+	writeln('|}'),
+	writeln('\\hline'),
+	length(Prefix,6),
+	length(Suffix,6),
+	append(Prefix,SuffixPart,Genome),
+	append(InBetween,Suffix,SuffixPart),
+	append(Suffix1,[Last],Suffix),
+
+	write('\\multicolumn{'),
+	write(GenomeLen), 
+	writeln('}{ |c| }{ Amino acid sequence in each three reading frames: }  \\\\'),
+	writeln('\\hline'),
+
+	% FIXME: Doesn't work with arbitrary lengths
+	AminoAcidCols1 is floor(GenomeLen/3)-1,
+	AminoAcidCols2 is floor(GenomeLen/3)-2,
+	foreach(_I in 1..AminoAcidCols1, write('\\multicolumn{3}{ |c| }{ } & ')),
+	writeln('\\multicolumn{3}{ |c| }{ } & \\\\ '),
+	writeln('\\hline'),
+	write(' &'),
+	foreach(_I in 1..AminoAcidCols1, write('\\multicolumn{3}{ |c| }{ } & ')),
+	writeln('\\multicolumn{3}{ |c| }{ } \\\\ '),
+	writeln('\\hline'),
+	write('\\multicolumn{2}{ |c| }{ } &'),
+	foreach(_I in 1..AminoAcidCols2, write('\\multicolumn{3}{ |c| }{ } & ')),
+	writeln('\\multicolumn{3}{ |c| }{ } & '),
+	write('\\multicolumn{2}{ |c| }{ } \\\\'),
+
+	writeln('\\hline'),
+	writeln('\\hline'),
+	write('\\multicolumn{'),
+	write(GenomeLen), 
+	writeln('}{ |c| }{ Nucleotide sequence: }  \\\\'),
+	writeln('\\hline'),
+
+	forall(member(X,Prefix), (write('\\textbf{'), upcase(X,Y),write(Y),write('}'), write('& '))),
+	forall(member(X,InBetween), (write(' '), write('& '))),
+	forall(member(X,Suffix1), (write('\\textbf{'), upcase(X,Y), write(Y),write('}'), write('& '))),
+	upcase(Last,LastUP), write('\\textbf{'), write(LastUP), write('}'),
+	writeln('\\\\'),
+	writeln('\\hline'),
+
+	forall(member(R,Reads),(
+		forall(member(X,Prefix), write(' & ')),
+		forall(member(X,InBetween), write(' & ')),
+		forall(member(X,Suffix1), ( write(' & '))),
+		writeln('\\\\'))),
+	writeln('\\hline'),
+
+	writeln('\\end{tabular}'),
+
+	writeln('\\newpage'),
+	
+	writeln('\\section*{Reads - cut out}'),
+	writeln('\\noindent'),
+	forall(member(R,Reads),(
+		write('\\begin{tabular}{'),
+		foreach(I in 1..ReadLen, write('|p{0.3cm}')),
+		writeln('|}'),
+		writeln('\\hline'),
+		append(FirstBases,[LastBase],R),
+		forall(member(B,FirstBases),(upcase(B,BUP),write(BUP),write(' & '))),
+		upcase(LastBase,LastBaseUP), write(LastBaseUP), writeln('\\\\'),
+		writeln('\\hline'),
+		writeln('\\end{tabular}'),
+		writeln('\\newline'),writeln('\\medskip'),writeln('\\noindent'))
+	),
+	writeln('\\end{document}').
+
+upcase(a,'A').
+upcase(g,'G').
+upcase(c,'C').
+upcase(t,'T').
+upcase('.',' '). % quacky hack
+upcase('-',' '). % quacky hack
+
+%%%% Tests: 
 t1 :-
 	mutate_triplet([t,t,c],X), writeln(X).
 
@@ -188,9 +360,55 @@ t4 :-
 	writeln(ReadVector).
 
 t5 :- 
-	make_genome(Genome,20,[c,a,c,a],_Reverse),
-	writeln(Genome),
-	make_reads(Genome,10,2,10,R),
-	length(R,NumReads),
+	make_genome(Genome,30,[t,e,s,t],ProtPos),
+	make_reads(Genome,10,2,Depths,Reads,Alignment),
+	writeln('genome:'),writeln(Genome),
+	writeln('depths:'),writeln(Depths),
+	writeln('Alignment:'),
+	forall(member(A,Alignment), writeln(A)),
+	length(Reads,NumReads),
+	writeln(ProtPos),
+	writeln(number_of_reads(NumReads)),
+	!,
+	write_fasta(1,Reads).
+
+go :- 
+	GenomeSize = 40,
+	ReadSize = 15,
+	MinDepth = 3,
+	BuriedProtein = [c,t,h],
+
+	%% Make a mutated protein
+	translate(11,ProtDNA,BuriedProtein),
+	mutate_protein_dna(ProtDNA,ProtMutantDNA),
+	translate(11,ProtMutantDNA,MutantProtein),
+	MutantProtein \= BuriedProtein,
+	write('(Known) Mutant protein is: '), writeln(MutantProtein),
+
+	%% Make genome containing protein
+	make_genome(Genome,GenomeSize,ProtDNA,ProtPos),
+
+	%% Make random reads for genome 
+	make_reads(Genome,ReadSize,MinDepth,Depths,Reads,Alignment),
+
+	sort(Alignment,AlignmentSortedRev),
+	reverse(AlignmentSortedRev,AlignmentSorted),
+
+	%% Write latex
+	write_fasta(1,Reads),
+	tell('test.tex'),
+	reads_to_latex(Reads,ReadSize,Genome,AlignmentSorted,ProtPos),
+	told,
+	system('pdflatex test.tex'),
+
+	%% Summarize:
+
+	writeln('genome:'),writeln(Genome),
+	writeln('depths:'),writeln(Depths),
+	writeln('Alignment:'),
+	forall(member(A,AlignmentSorted), writeln(A)),
+	length(Reads,NumReads),
+	writeln(ProtPos),
 	writeln(number_of_reads(NumReads)).
+	
 
