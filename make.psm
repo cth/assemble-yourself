@@ -382,7 +382,7 @@ go :-
 	GenomeSize = 40,
 	ReadSize = 15,
 	MinDepth = 3,
-	BuriedProtein = [c,t,h],
+	BuriedProtein = [g,e,n,e,t,i,c,s],
 
 	%% Make a mutated protein
 	translate(11,ProtDNA,BuriedProtein),
