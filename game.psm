@@ -1,4 +1,3 @@
-% Make genome:
 :- [util].
 :- [genecode].
 :- [dnaseq].
@@ -226,14 +225,24 @@ write_fasta(N,[R|Rs]) :-
 	N1 is N + 1,
 	write_fasta(N1,Rs).
 
-reads_to_latex(Reads,ReadLen,Genome,Alignment,ORF) :-
+make_latex(Reads,ReadLen,Genome,Alignment,ORF,MutantProtein) :-
 	length(Genome,GenomeLen),
 
 	writeln('\\documentclass{article}'),
 	writeln('\\usepackage[a4paper,landscape,margin=0.1cm]{geometry}'),
 	writeln('\\usepackage{rotating}'),
+	write('\\newcommand{\\mutantprotein}{'),
+	forall(member(AA,MutantProtein),(upcase(AA,AA_UP),write(AA_UP))),
+	writeln('}'),
+	length(Reads,NumberOfReads),
+	write('\\newcommand{\\numberofreads}{'),
+	write(NumberOfReads),
+	writeln('}'),
 	writeln('\\begin{document}'),
 	writeln('\\large'),
+
+	writeln('\\input{intro.tex}'),
+	writeln('\\newpage'),
 
 	writeln('\\section*{Solution:}'),
 	write('\\begin{tabular}{'),
@@ -335,12 +344,15 @@ reads_to_latex(Reads,ReadLen,Genome,Alignment,ORF) :-
 
 	writeln('\\end{document}').
 
-upcase(a,'A').
-upcase(g,'G').
-upcase(c,'C').
-upcase(t,'T').
-upcase('.',' '). % quacky hack
-upcase('-',' '). % quacky hack
+upcase('.',' ') :- !. % quacky hack
+upcase('-',' ') :- !. % quacky hack
+upcase(Low,Up) :-
+	atom_codes(Low,LowCode),
+	LowCode >= 97,
+	LowCode =< 122,	
+	UpCode is LowCode - 32,
+	atom_codes(Up,[UpCode]).
+
 
 %%%% Tests: 
 t1 :-
@@ -389,7 +401,6 @@ go :-
 	mutate_protein_dna(ProtDNA,ProtMutantDNA),
 	translate(11,ProtMutantDNA,MutantProtein),
 	MutantProtein \= BuriedProtein,
-	write('(Known) Mutant protein is: '), writeln(MutantProtein),
 
 	%% Make genome containing protein
 	make_genome(Genome,GenomeSize,ProtDNA,ProtPos),
@@ -403,12 +414,12 @@ go :-
 	%% Write latex
 	write_fasta(1,Reads),
 	tell('test.tex'),
-	reads_to_latex(Reads,ReadSize,Genome,AlignmentSorted,ProtPos),
+	make_latex(Reads,ReadSize,Genome,AlignmentSorted,ProtPos,MutantProtein),
 	told,
 	system('pdflatex test.tex'),
 
 	%% Summarize:
-
+	write('(Known) Mutant protein is: '), writeln(MutantProtein),
 	writeln('genome:'),writeln(Genome),
 	writeln('depths:'),writeln(Depths),
 	writeln('Alignment:'),
@@ -416,5 +427,3 @@ go :-
 	length(Reads,NumReads),
 	writeln(ProtPos),
 	writeln(number_of_reads(NumReads)).
-	
-
