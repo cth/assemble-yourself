@@ -41,48 +41,36 @@ make_reads(Genome,ReadSize,MinDepth,DepthsOut,ReadsOut,Alignment) :-
 	length(Genome,L),
 	rep(L,0,DepthsIn),
 	make_reads_rec(Genome,ReadSize,MinDepth,DepthsIn,DepthsOut,[],ReadsOut,[],Alignment).
-%	ReadsOut = ReadsOut1.
-%		forall(member(R,ReadsOut),writeln(R))
-%
-%	(forall(member(D,DepthsOut), (D =< MaxDepth)) -> 
-%		writeln(depths(DepthsOut)),
-%		ReadsOut = ReadsOut1,
-%		forall(member(R,ReadsOut),writeln(R))
-%		;
-%		make_reads(Genome,ReadSize,MinDepth,MaxDepth,ReadsOut,Consensus)).
 
 make_reads_rec(_Genome,_ReadSize,MinDepth,DepthsInOut,DepthsInOut,ReadsInOut,ReadsInOut,Consensus,Consensus) :-
 	forall(member(DI,DepthsInOut), DI >= MinDepth).
 make_reads_rec(Genome,ReadSize,MinDepth,DepthsIn,DepthsOut,ReadsIn,ReadsOut,AlignIn,AlignOut) :-
-	%writeln(random_read(Genome,DepthsIn,ReadSize,Read,ReadPos)),
 	random_read(Genome,DepthsIn,ReadSize,Read,ReadPos),
-	%writeln(here2),
 	length(Genome,GenomeLength),
 	ReadStart is ReadPos,
 	ReadEnd is ReadPos + ReadSize,
-	%writeln(read_vector),
-	%writeln(read_vector(1,GenomeLength,ReadStart,ReadEnd,ReadVector)),
 	read_vector(0,GenomeLength,ReadStart,ReadEnd,ReadVector),
 	add_vectors(DepthsIn,ReadVector,NewDepthsIn),
-	%writeln(start(readalign)),
-	%writeln(read_align(0,GenomeLength,ReadStart,ReadEnd,ReadAlign,Read)),
 	read_align(0,GenomeLength,ReadStart,ReadEnd,ReadAlign,Read),
-	%writeln(stop(readalign)),
-	%make_consensus_sequence(ReadAlign,ConsensusIn,ConsensusCurrent),
-	%writeln(NewDepthsIn),
 	!,
 	make_reads_rec(Genome,ReadSize,MinDepth,NewDepthsIn,DepthsOut,[Read|ReadsIn],ReadsOut,[ReadAlign|AlignIn],AlignOut).
 
 
+make_consensus_sequence([Consensus],Consensus).
+make_consensus_sequence([R1,R2|ReadsRest],Consensus) :-
+	make_consensus_sequence(R1,R2,R3),
+	make_consensus_sequence([R3|ReadsRest],Consensus).
+
 make_consensus_sequence([],[],[]).
-make_consensus_sequence(['*'|Xs],[Y|Ys],[Y|Zs]) :-
+make_consensus_sequence(['.'|Xs],[Y|Ys],[Y|Zs]) :-
 	make_consensus_sequence(Xs,Ys,Zs).
-make_consensus_sequence([X|Xs],['*'|Ys],[X|Zs]) :-
+make_consensus_sequence([X|Xs],['.'|Ys],[X|Zs]) :-
 	make_consensus_sequence(Xs,Ys,Zs).
 make_consensus_sequence([X|Xs],[Y|Ys],[Z|Zs]) :-
 	iupac_consensus(X,Y,Z),
 	make_consensus_sequence(Xs,Ys,Zs).
 
+% IUPAC consensus between two IUPAC consensus codes 
 iupac_consensus(IUPAC1,IUPAC2,Consensus) :-
 	iupac(Bases1,IUPAC1),
 	iupac(Bases2,IUPAC2),
@@ -117,7 +105,6 @@ make_consensus_sequence([X|Xs],['*'|Ys],[X|Zs]) :-
 make_consensus_sequence([X|Xs],[Y|Ys],[Z|Zs]) :-
 	iupac_consensus(X,Y,Z),
 	make_consensus_sequence(Xs,Ys,Zs).
-
 
 read_align(G,G,_,_,[],[]).
 read_align(N,G,ReadStart,ReadEnd,['.'|Xs],Read) :-
@@ -225,7 +212,7 @@ write_fasta(N,[R|Rs]) :-
 	N1 is N + 1,
 	write_fasta(N1,Rs).
 
-make_latex(Reads,ReadLen,Genome,Alignment,ORF,MutantProtein) :-
+make_latex(Reads,ReadLen,Genome,Alignment,ORF,MutantProtein,Consensus) :-
 	length(Genome,GenomeLen),
 
 	writeln('\\documentclass{article}'),
@@ -255,6 +242,8 @@ make_latex(Reads,ReadLen,Genome,Alignment,ORF,MutantProtein) :-
 	upcase(O2,O2_UP),write('\\textbf{'),write(O2_UP),write('}'),writeln('\\\\'),
 	writeln('\\hline'),
 
+
+
 	writeln('\\hline'),
 	forall(member(A,Alignment),(
 		append(A1,[A2],A),
@@ -262,6 +251,19 @@ make_latex(Reads,ReadLen,Genome,Alignment,ORF,MutantProtein) :-
 		upcase(A2,A2_UP), write(A2_UP), writeln('\\\\'),
 		writeln('\\hline')
 	)),
+
+	write('\\multicolumn{'),
+	write(GenomeLen), 
+	writeln('}{ |c| }{ IUPAC Consensus sequence: }  \\\\'),
+	writeln('\\hline'),
+
+
+	writeln('\\hline'),
+	append(Consensus1,[Consensus2],Consensus),
+	forall(member(C,Consensus1),(upcase(C,C_UP), write(C_UP), write('& '))),
+	upcase(Consensus2,Consensus2_UP),write('\\textbf{'),write(Consensus2_UP),write('}'),writeln('\\\\'),
+	writeln('\\hline'),
+
 
 	writeln('\\end{tabular}'),
 
@@ -353,48 +355,13 @@ upcase(Low,Up) :-
 	UpCode is LowCode - 32,
 	atom_codes(Up,[UpCode]).
 
-
-%%%% Tests: 
-t1 :-
-	mutate_triplet([t,t,c],X), writeln(X).
-
-t2 :-
-	translate(11,X,[g,e,n,e,t,i,c,s]), mutate_protein_dna(X,Y), translate(11,Y,P), writeln(P).
-
-t3 :-
-	make_genome(Genome,80,[c,p,h],_Reverse),
-	writeln(Genome).
-
-t4 :-
-	make_genome(Genome,15,[c,p,h],_Reverse),
-	writeln(Genome),
-	random_read(Genome,10,Read,ReadPos),
-	writeln(Read),
-	writeln(readpos(ReadPos)),
-	length(Genome,G),
-	ReadStart is ReadPos,
-	ReadEnd is ReadPos + 10,
-	read_vector(0,G,ReadStart,ReadEnd,ReadVector),
-	writeln(ReadVector).
-
-t5 :- 
-	make_genome(Genome,30,[t,e,s,t],ProtPos),
-	make_reads(Genome,10,2,Depths,Reads,Alignment),
-	writeln('genome:'),writeln(Genome),
-	writeln('depths:'),writeln(Depths),
-	writeln('Alignment:'),
-	forall(member(A,Alignment), writeln(A)),
-	length(Reads,NumReads),
-	writeln(ProtPos),
-	writeln(number_of_reads(NumReads)),
-	!,
-	write_fasta(1,Reads).
-
 go :- 
 	GenomeSize = 40,
 	ReadSize = 15,
-	MinDepth = 3,
-	BuriedProtein = [g,e,n,e,t,i,c,s],
+	MinDepth = 2,
+%	BuriedProtein = [g,e,n,e,t,i,c,s],
+	BuriedProtein = [r,e,t,r,e,a,t],
+%	BuriedProtein = [m,u,s,e,i,o,n],
 
 	%% Make a mutated protein
 	translate(11,ProtDNA,BuriedProtein),
@@ -411,10 +378,13 @@ go :-
 	sort(Alignment,AlignmentSortedRev),
 	reverse(AlignmentSortedRev,AlignmentSorted),
 
+	% Make IUPAC consensus sequence
+	make_consensus_sequence(Alignment,Consensus),
+
 	%% Write latex
 	write_fasta(1,Reads),
 	tell('test.tex'),
-	make_latex(Reads,ReadSize,Genome,AlignmentSorted,ProtPos,MutantProtein),
+	make_latex(Reads,ReadSize,Genome,AlignmentSorted,ProtPos,MutantProtein, Consensus),
 	told,
 	system('pdflatex test.tex'),
 
@@ -425,5 +395,6 @@ go :-
 	writeln('Alignment:'),
 	forall(member(A,AlignmentSorted), writeln(A)),
 	length(Reads,NumReads),
+	writeln(Consensus),
 	writeln(ProtPos),
 	writeln(number_of_reads(NumReads)).
