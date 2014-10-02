@@ -52,6 +52,8 @@ This will generate similarly generate the printable game as *gene.pdf* .
 You may adjust various settings such as the minimum read depth and the 
 read length by editing *settings.pl*.  
 
+For the impatient, a few pregenerated games are available in the examples
+folder of this repository.
 
 
 Copyright
