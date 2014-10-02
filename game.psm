@@ -56,7 +56,6 @@ make_reads_rec(Genome,ReadSize,MinDepth,DepthsIn,DepthsOut,ReadsIn,ReadsOut,Alig
 	!,
 	make_reads_rec(Genome,ReadSize,MinDepth,NewDepthsIn,DepthsOut,[Read|ReadsIn],ReadsOut,[ReadAlign|AlignIn],AlignOut).
 
-
 make_consensus_sequence([Consensus],Consensus).
 make_consensus_sequence([R1,R2|ReadsRest],Consensus) :-
 	make_consensus_sequence(R1,R2,R3),
@@ -79,7 +78,6 @@ iupac_consensus(IUPAC1,IUPAC2,Consensus) :-
 	eliminate_duplicate(Bases,SetBases),
 	sort(SetBases,SetBasesSort),
 	iupac(SetBasesSort,Consensus).
-	
 
 % IUPAC relations:
 iupac([a],a).
@@ -121,7 +119,6 @@ read_align(N,G,ReadStart,ReadEnd,[X|Xs],[X|Ys]) :-
 	N < ReadEnd,
 	N1 is N + 1,
 	read_align(N1,G,ReadStart,ReadEnd,Xs,Ys).
-
 
 read_vector(G,G,_,_,[]).
 read_vector(N,G,ReadStart,ReadEnd,[0|Xs]) :-
@@ -292,44 +289,6 @@ latex_make_amino_acid_entry(GenomeLen,Strand,Prefix,InBetween,Suffix) :-
 	write('\\multicolumn{2}{ |c| }{ } \\\\'),
 	writeln('\\hline').
 
-%latex_make_strand_entry(GenomeLen,Strand,Prefix,InBetween,Suffix) :-
-%	write('\\multicolumn{'),
-%	write(GenomeLen), 
-%	write('}{ |c| }{ Amino acid sequence in each three reading frames ('),
-%	write(Strand),
-%	writeln(' strand) }  \\\\'),
-%	writeln('\\hline'),
-%
-%	% FIXME: Doesn't work with arbitrary lengths
-%	AminoAcidCols1 is floor(GenomeLen/3)-1,
-%	AminoAcidCols2 is floor(GenomeLen/3)-2,
-%	foreach(_I in 1..AminoAcidCols1, write('\\multicolumn{3}{ |c| }{ } & ')),
-%	writeln('\\multicolumn{3}{ |c| }{ } & \\\\ '),
-%	writeln('\\hline'),
-%	write(' &'),
-%	foreach(_I in 1..AminoAcidCols1, write('\\multicolumn{3}{ |c| }{ } & ')),
-%	writeln('\\multicolumn{3}{ |c| }{ } \\\\ '),
-%	writeln('\\hline'),
-%	write('\\multicolumn{2}{ |c| }{ } &'),
-%	foreach(_I in 1..AminoAcidCols2, write('\\multicolumn{3}{ |c| }{ } & ')),
-%	writeln('\\multicolumn{3}{ |c| }{ } & '),
-%	write('\\multicolumn{2}{ |c| }{ } \\\\'),
-%	writeln('\\hline'),
-%
-%	append(Suffix1,[Last],Suffix),
-%	write('\\multicolumn{'),
-%	write(GenomeLen), 
-%	write('}{ |c| }{ Nucleotide sequence ('),
-%	write(Strand),
-%	writeln(' strand): }  \\\\'),
-%	writeln('\\hline'),
-%	forall(member(X,Prefix), (write('\\textbf{'), latex_write_nucleotide(Strand,X),write('}'), write('& '))),
-%	forall(member(X,InBetween), (write(' '), write('& '))),
-%	forall(member(X,Suffix1), (write('\\textbf{'), latex_write_nucleotide(Strand,X),write('}'), write('& '))),
-%	write('\\textbf{'), latex_write_nucleotide(Strand,Last), write('}'),
-%	writeln('\\\\'),
-%	foreach(_ in 1..3, writeln('\\hline')).
-
 latex_make_scaffold(GenomeLen,Genome) :-
 	writeln('\\section*{Scaffold}'),
 	write('\\begin{tabular}{'),
@@ -435,14 +394,13 @@ upcase(Low,Up) :-
 	UpCode is LowCode - 32,
 	atom_codes(Up,[UpCode]).
 
+
+
 go :- 
 	GenomeSize = 40,
 	ReadSize = 14,
 	MinDepth = 2,
-% BuriedProtein = [g,e,n,e,t,i,c,s],
-	BuriedProtein = [d,i,s,e,a,s,e],
-%	BuriedProtein = [r,e,t,r,e,a,t],
-%	BuriedProtein = [m,u,s,e,i,o,n],
+	secret_protein(BuriedProtein),
 
 	%% Make a mutated protein
 	translate(11,ProtDNA,BuriedProtein),
@@ -467,12 +425,17 @@ go :-
 
 	%% Write latex
 	write_fasta(1,Reads),
-	tell('test.tex'),
+	secret_protein(Secret),
+	append(Secret,['.tex'],TexFileList),
+	atom_concat_list(TexFileList,TexFile),
+	tell(TexFile),
 	make_latex(Reads,ReadStrands,ReadSize,Genome,AlignmentSorted,ProtPos,MutantProtein, Consensus),
 	told,
-	system('pdflatex test.tex'),
+	atom_concat('pdflatex ',TexFile,TexCmd), 
+	system(TexCmd),
 
 	%% Summarize:
+	write('-------------------------- Summary ------------------------------'),
 	write('(Known) Mutant protein is: '), writeln(MutantProtein),
 	writeln('genome:'),writeln(Genome),
 	writeln('depths:'),writeln(Depths),
