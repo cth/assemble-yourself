@@ -349,7 +349,8 @@ make_latex(Reads,ReadStrands,ReadLen,Genome,Alignment,ORF,MutantProtein,Consensu
 
 	% INTRODUCTION:
 	writeln('\\documentclass{article}'),
-	writeln('\\usepackage[a4paper,landscape,margin=0.1cm]{geometry}'),
+	writeln('\\usepackage[a4paper,margin=0.1cm]{geometry}'),
+	%writeln('\\usepackage[a4paper,landscape,margin=0.1cm]{geometry}'),
 	writeln('\\usepackage{rotating}'),
 	write('\\newcommand{\\mutantprotein}{'),
 	forall(member(AA,MutantProtein),(upcase(AA,AA_UP),write(AA_UP))),
@@ -362,12 +363,12 @@ make_latex(Reads,ReadStrands,ReadLen,Genome,Alignment,ORF,MutantProtein,Consensu
 	writeln('\\large'),
 	writeln('\\input{intro.tex}'),
 	!,
-	writeln('\\newpage'),
-	latex_make_solution(GenomeLen,ORF,Consensus,Alignment),
-	!,
+
 	% SCAFFOLD:
 	writeln('\\newpage'),
+	writeln('\\begin{sidewaysfigure}'),
 	latex_make_scaffold(GenomeLen,Genome),
+	writeln('\\end{sidewaysfigure}'),
 	!,
 
 	% READS:
@@ -377,8 +378,17 @@ make_latex(Reads,ReadStrands,ReadLen,Genome,Alignment,ORF,MutantProtein,Consensu
 
 	% TRANSLATION TABLES:
 	writeln('\\newpage'),
+	writeln('\\begin{sidewaysfigure}'),
 	writeln('\\section*{Amino Acid translation table}'),
 	writeln('\\input{aminoacids.tex}'),
+	writeln('\\end{sidewaysfigure}'),
+
+	writeln('\\newpage'),
+	writeln('\\begin{sidewaysfigure}'),
+	latex_make_solution(GenomeLen,ORF,Consensus,Alignment),
+	writeln('\\end{sidewaysfigure}'),
+	!,
+
 
 	writeln('\\end{document}').
 
@@ -435,7 +445,7 @@ go :-
 	system(TexCmd),
 
 	%% Summarize:
-	write('-------------------------- Summary ------------------------------'),
+	writeln('-------------------------- Summary ------------------------------'),
 	write('(Known) Mutant protein is: '), writeln(MutantProtein),
 	writeln('genome:'),writeln(Genome),
 	writeln('depths:'),writeln(Depths),
