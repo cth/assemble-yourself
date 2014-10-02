@@ -2,6 +2,7 @@
 :- [genecode].
 :- [dnaseq].
 
+values(strand,[forward,reverse],[0.1,0.9]).
 values(base,[a,g,c,t]).
 values(mutate_base(a), [a,g,c,t], [0.97,0.01,0.01,0.01]).
 values(mutate_base(g), [g,c,t,a], [0.97,0.01,0.01,0.01]).
@@ -188,7 +189,7 @@ random_dna(0,[]).
 random_dna(N,[X|Xs]) :-
 	msw(base,X),
 	N1 is N - 1,
-	random_dna(N1,Xs).	
+	random_dna(N1,Xs).
 
 mutate_read([],[]).
 mutate_read([X|Xs],[Y|Ys]) :-
@@ -212,28 +213,14 @@ write_fasta(N,[R|Rs]) :-
 	N1 is N + 1,
 	write_fasta(N1,Rs).
 
-make_latex(Reads,ReadLen,Genome,Alignment,ORF,MutantProtein,Consensus) :-
-	length(Genome,GenomeLen),
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Latex generation                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-	writeln('\\documentclass{article}'),
-	writeln('\\usepackage[a4paper,landscape,margin=0.1cm]{geometry}'),
-	writeln('\\usepackage{rotating}'),
-	write('\\newcommand{\\mutantprotein}{'),
-	forall(member(AA,MutantProtein),(upcase(AA,AA_UP),write(AA_UP))),
-	writeln('}'),
-	length(Reads,NumberOfReads),
-	write('\\newcommand{\\numberofreads}{'),
-	write(NumberOfReads),
-	writeln('}'),
-	writeln('\\begin{document}'),
-	writeln('\\large'),
-
-	writeln('\\input{intro.tex}'),
-	writeln('\\newpage'),
-
+latex_make_solution(GenomeLen,ORF,Consensus,Alignment) :-
 	writeln('\\section*{Solution:}'),
 	write('\\begin{tabular}{'),
-	foreach(I in 1..GenomeLen, write('|p{0.3cm}')),
+	foreach(_ in 1..GenomeLen, write('|p{0.3cm}')),
 	writeln('|}'),
 
 	writeln('\\hline'),
@@ -241,8 +228,6 @@ make_latex(Reads,ReadLen,Genome,Alignment,ORF,MutantProtein,Consensus) :-
 	forall(member(O,O1),(upcase(O,O_UP), write(O_UP), write('& '))),
 	upcase(O2,O2_UP),write('\\textbf{'),write(O2_UP),write('}'),writeln('\\\\'),
 	writeln('\\hline'),
-
-
 
 	writeln('\\hline'),
 	forall(member(A,Alignment),(
@@ -257,32 +242,38 @@ make_latex(Reads,ReadLen,Genome,Alignment,ORF,MutantProtein,Consensus) :-
 	writeln('}{ |c| }{ IUPAC Consensus sequence: }  \\\\'),
 	writeln('\\hline'),
 
-
 	writeln('\\hline'),
 	append(Consensus1,[Consensus2],Consensus),
 	forall(member(C,Consensus1),(upcase(C,C_UP), write(C_UP), write('& '))),
 	upcase(Consensus2,Consensus2_UP),write('\\textbf{'),write(Consensus2_UP),write('}'),writeln('\\\\'),
 	writeln('\\hline'),
 
+	writeln('\\end{tabular}').
 
-	writeln('\\end{tabular}'),
+latex_write_nucleotide(forward,N) :- upcase(N,U), write(U).
+latex_write_nucleotide(reverse,N) :- dna_complement(N,R), upcase(R,U), write(U).
 
-	writeln('\\newpage'),
-
-	%writeln('\\section*{Scaffold}'),
-	write('\\begin{tabular}{'),
-	foreach(I in 1..GenomeLen, write('|p{0.3cm}')),
-	writeln('|}'),
-	writeln('\\hline'),
-	length(Prefix,6),
-	length(Suffix,6),
-	append(Prefix,SuffixPart,Genome),
-	append(InBetween,Suffix,SuffixPart),
+latex_make_nucleotide_entry(GenomeLen,Strand,Prefix,InBetween,Suffix) :-
 	append(Suffix1,[Last],Suffix),
-
 	write('\\multicolumn{'),
 	write(GenomeLen), 
-	writeln('}{ |c| }{ Amino acid sequence in each three reading frames: }  \\\\'),
+	write('}{ |c| }{ Nucleotide sequence ('),
+	write(Strand),
+	writeln(' strand): }  \\\\'),
+	writeln('\\hline'),
+	forall(member(X,Prefix), (write('\\textbf{'), latex_write_nucleotide(Strand,X),write('}'), write('& '))),
+	forall(member(X,InBetween), (write(' '), write('& '))),
+	forall(member(X,Suffix1), (write('\\textbf{'), latex_write_nucleotide(Strand,X),write('}'), write('& '))),
+	write('\\textbf{'), latex_write_nucleotide(Strand,Last), write('}'),
+	writeln('\\\\'),
+	writeln('\\hline').
+
+latex_make_amino_acid_entry(GenomeLen,Strand,Prefix,InBetween,Suffix) :-
+	write('\\multicolumn{'),
+	write(GenomeLen), 
+	write('}{ |c| }{ Amino acid sequence in each three reading frames ('),
+	write(Strand),
+	writeln(' strand) }  \\\\'),
 	writeln('\\hline'),
 
 	% FIXME: Doesn't work with arbitrary lengths
@@ -299,52 +290,141 @@ make_latex(Reads,ReadLen,Genome,Alignment,ORF,MutantProtein,Consensus) :-
 	foreach(_I in 1..AminoAcidCols2, write('\\multicolumn{3}{ |c| }{ } & ')),
 	writeln('\\multicolumn{3}{ |c| }{ } & '),
 	write('\\multicolumn{2}{ |c| }{ } \\\\'),
+	writeln('\\hline').
 
+%latex_make_strand_entry(GenomeLen,Strand,Prefix,InBetween,Suffix) :-
+%	write('\\multicolumn{'),
+%	write(GenomeLen), 
+%	write('}{ |c| }{ Amino acid sequence in each three reading frames ('),
+%	write(Strand),
+%	writeln(' strand) }  \\\\'),
+%	writeln('\\hline'),
+%
+%	% FIXME: Doesn't work with arbitrary lengths
+%	AminoAcidCols1 is floor(GenomeLen/3)-1,
+%	AminoAcidCols2 is floor(GenomeLen/3)-2,
+%	foreach(_I in 1..AminoAcidCols1, write('\\multicolumn{3}{ |c| }{ } & ')),
+%	writeln('\\multicolumn{3}{ |c| }{ } & \\\\ '),
+%	writeln('\\hline'),
+%	write(' &'),
+%	foreach(_I in 1..AminoAcidCols1, write('\\multicolumn{3}{ |c| }{ } & ')),
+%	writeln('\\multicolumn{3}{ |c| }{ } \\\\ '),
+%	writeln('\\hline'),
+%	write('\\multicolumn{2}{ |c| }{ } &'),
+%	foreach(_I in 1..AminoAcidCols2, write('\\multicolumn{3}{ |c| }{ } & ')),
+%	writeln('\\multicolumn{3}{ |c| }{ } & '),
+%	write('\\multicolumn{2}{ |c| }{ } \\\\'),
+%	writeln('\\hline'),
+%
+%	append(Suffix1,[Last],Suffix),
+%	write('\\multicolumn{'),
+%	write(GenomeLen), 
+%	write('}{ |c| }{ Nucleotide sequence ('),
+%	write(Strand),
+%	writeln(' strand): }  \\\\'),
+%	writeln('\\hline'),
+%	forall(member(X,Prefix), (write('\\textbf{'), latex_write_nucleotide(Strand,X),write('}'), write('& '))),
+%	forall(member(X,InBetween), (write(' '), write('& '))),
+%	forall(member(X,Suffix1), (write('\\textbf{'), latex_write_nucleotide(Strand,X),write('}'), write('& '))),
+%	write('\\textbf{'), latex_write_nucleotide(Strand,Last), write('}'),
+%	writeln('\\\\'),
+%	foreach(_ in 1..3, writeln('\\hline')).
+
+latex_make_scaffold(GenomeLen,Genome) :-
+	writeln('\\section*{Scaffold}'),
+	write('\\begin{tabular}{'),
+	foreach(_ in 1..GenomeLen, write('|p{0.3cm}')),
+	writeln('|}'),
 	writeln('\\hline'),
-	writeln('\\hline'),
-	write('\\multicolumn{'),
-	write(GenomeLen), 
-	writeln('}{ |c| }{ Nucleotide sequence: }  \\\\'),
+	length(Prefix,6),
+	length(Suffix,6),
+	append(Prefix,SuffixPart,Genome),
+	append(InBetween,Suffix,SuffixPart),
+	append(Suffix1,[_],Suffix),
+	dna_seq_complement(Prefix,PrefixRev),
+	dna_seq_complement(Suffix,SuffixRev),
+
+
+	latex_make_amino_acid_entry(GenomeLen,forward,Prefix,InBetween,Suffix),
+	latex_make_nucleotide_entry(GenomeLen,forward,Prefix,InBetween,Suffix),
 	writeln('\\hline'),
 
-	forall(member(X,Prefix), (write('\\textbf{'), upcase(X,Y),write(Y),write('}'), write('& '))),
-	forall(member(X,InBetween), (write(' '), write('& '))),
-	forall(member(X,Suffix1), (write('\\textbf{'), upcase(X,Y), write(Y),write('}'), write('& '))),
-	upcase(Last,LastUP), write('\\textbf{'), write(LastUP), write('}'),
-	writeln('\\\\'),
-	writeln('\\hline'),
-
-	forall(member(R,Reads),(
-		forall(member(X,Prefix), write(' & ')),
-		forall(member(X,InBetween), write(' & ')),
-		forall(member(X,Suffix1), ( write(' & '))),
+	foreach(_ in 1..26,(
+		forall(member(_A,Prefix), write(' & ')),
+		forall(member(_B,InBetween), write(' & ')),
+		forall(member(_C,Suffix1), ( write(' & '))),
 		writeln('\\\\'))),
 	writeln('\\hline'),
 
-	writeln('\\end{tabular}'),
 
-	writeln('\\newpage'),
-	
+	writeln('\\hline'),
+	latex_make_nucleotide_entry(GenomeLen,forward,PrefixRev,InBetween,SuffixRev),
+	latex_make_amino_acid_entry(GenomeLen,forward,PrefixRev,InBetween,SuffixRev),
+
+	write('\\end{tabular}').
+
+latex_make_single_read(Reads,Strands,ReadLen,I) :-
+	nth1(I,Reads,R),
+	nth1(I,Strands,Strand),
+	write('\\begin{tabular}{'),
+	foreach(_ in 1..ReadLen, write('|p{0.3cm}')),
+	writeln('|}'),
+	writeln('\\hline'),
+	append(FirstBases,[LastBase],R),
+	forall(member(B,FirstBases),(latex_write_nucleotide(Strand,B),write(' & '))),
+	latex_write_nucleotide(Strand,LastBase), write('\\\\'),
+	write(' % '), write(Strand), writeln(' strand read'),
+	writeln('\\hline'),
+	writeln('\\end{tabular}'),
+	writeln('\\newline'),writeln('\\medskip'),writeln('\\noindent').
+
+
+latex_make_reads(Reads,Strands,ReadLen) :-
 	writeln('\\section*{Reads - cut out}'),
 	writeln('\\noindent'),
-	forall(member(R,Reads),(
-		write('\\begin{tabular}{'),
-		foreach(I in 1..ReadLen, write('|p{0.3cm}')),
-		writeln('|}'),
-		writeln('\\hline'),
-		append(FirstBases,[LastBase],R),
-		forall(member(B,FirstBases),(upcase(B,BUP),write(BUP),write(' & '))),
-		upcase(LastBase,LastBaseUP), write(LastBaseUP), writeln('\\\\'),
-		writeln('\\hline'),
-		writeln('\\end{tabular}'),
-		writeln('\\newline'),writeln('\\medskip'),writeln('\\noindent'))
-	),
+	length(Reads,N),
+	foreach(I in 1..N,latex_make_single_read(Reads,Strands,ReadLen,I)).
 
+make_latex(Reads,ReadStrands,ReadLen,Genome,Alignment,ORF,MutantProtein,Consensus) :-
+	length(Genome,GenomeLen),
+
+	% INTRODUCTION:
+	writeln('\\documentclass{article}'),
+	writeln('\\usepackage[a4paper,landscape,margin=0.1cm]{geometry}'),
+	writeln('\\usepackage{rotating}'),
+	write('\\newcommand{\\mutantprotein}{'),
+	forall(member(AA,MutantProtein),(upcase(AA,AA_UP),write(AA_UP))),
+	writeln('}'),
+	length(Reads,NumberOfReads),
+	write('\\newcommand{\\numberofreads}{'),
+	write(NumberOfReads),
+	writeln('}'),
+	writeln('\\begin{document}'),
+	writeln('\\large'),
+	writeln('\\input{intro.tex}'),
+	!,
+	writeln('\\newpage'),
+	latex_make_solution(GenomeLen,ORF,Consensus,Alignment),
+	!,
+	% SCAFFOLD:
+	writeln('\\newpage'),
+	latex_make_scaffold(GenomeLen,Genome),
+	!,
+
+	% READS:
+	writeln('\\newpage'),
+	latex_make_reads(Reads,ReadStrands,ReadLen),
+	!,
+
+	% TRANSLATION TABLES:
 	writeln('\\newpage'),
 	writeln('\\section*{Amino Acid translation table}'),
 	writeln('\\input{aminoacids.tex}'),
 
 	writeln('\\end{document}').
+
+testr :-
+	latex_make_reads([[a,a,a],[g,g,g]],[reverse,forward],3).
 
 upcase('.',' ') :- !. % quacky hack
 upcase('-',' ') :- !. % quacky hack
@@ -357,10 +437,11 @@ upcase(Low,Up) :-
 
 go :- 
 	GenomeSize = 40,
-	ReadSize = 15,
+	ReadSize = 14,
 	MinDepth = 2,
-%	BuriedProtein = [g,e,n,e,t,i,c,s],
-	BuriedProtein = [r,e,t,r,e,a,t],
+% BuriedProtein = [g,e,n,e,t,i,c,s],
+	BuriedProtein = [d,i,s,e,a,s,e],
+%	BuriedProtein = [r,e,t,r,e,a,t],
 %	BuriedProtein = [m,u,s,e,i,o,n],
 
 	%% Make a mutated protein
@@ -375,6 +456,9 @@ go :-
 	%% Make random reads for genome 
 	make_reads(Genome,ReadSize,MinDepth,Depths,Reads,Alignment),
 
+	%% Indicate that some reads map to the reverse strand
+	findall(Strand,(member(_,Reads),msw(strand,Strand)),ReadStrands),
+
 	sort(Alignment,AlignmentSortedRev),
 	reverse(AlignmentSortedRev,AlignmentSorted),
 
@@ -384,7 +468,7 @@ go :-
 	%% Write latex
 	write_fasta(1,Reads),
 	tell('test.tex'),
-	make_latex(Reads,ReadSize,Genome,AlignmentSorted,ProtPos,MutantProtein, Consensus),
+	make_latex(Reads,ReadStrands,ReadSize,Genome,AlignmentSorted,ProtPos,MutantProtein, Consensus),
 	told,
 	system('pdflatex test.tex'),
 
