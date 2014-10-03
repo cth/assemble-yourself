@@ -1,6 +1,7 @@
 :- [util].
 :- [genecode].
 :- [dnaseq].
+:- [settings].
 
 values(strand,[forward,reverse],[0.1,0.9]).
 values(base,[a,g,c,t]).
@@ -404,12 +405,14 @@ upcase(Low,Up) :-
 	UpCode is LowCode - 32,
 	atom_codes(Up,[UpCode]).
 
-
+go(BuriedProtein) :-
+	assert(secret_protein(BuriedProtein)),
+	go.
 
 go :- 
 	GenomeSize = 40,
-	ReadSize = 14,
-	MinDepth = 2,
+	readsize(ReadSize),	
+	mindepth(MinDepth),
 	secret_protein(BuriedProtein),
 
 	%% Make a mutated protein
