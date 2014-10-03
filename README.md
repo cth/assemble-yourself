@@ -43,7 +43,7 @@ Where [g,e,n,e] is the secret protein name specified as a Prolog list.
 This will generate the printable game as *gene.pdf* .
 
 If you are fortunate enough to be on a Unix platform, you may also run the 
-program to using game.sh hell script, e.g.,
+program to using game.sh shell script, e.g.,
 
   $ ./game.sh gene
 
