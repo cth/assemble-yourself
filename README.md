@@ -27,7 +27,7 @@ Running the program
 ===================
 
 The computer program is implemented in PRISM, a probabilistic logic extension 
-of Prolog language.
+of the Prolog language.
 
 You can get PRISM here: http://sato-www.cs.titech.ac.jp/prism/
 
@@ -38,7 +38,7 @@ the program.
 Once you have both PRISM and Latex installed, you can run the program from PRISM by
 starting prism in this directory and typing:
 
-  prism(game), go([g,e,n,e]).<enter>
+ prism(game), go([g,e,n,e]).<enter>
 
 Where [g,e,n,e] is the secret protein name specified as a Prolog list. 
 This will generate the printable game as *gene.pdf* .
@@ -46,7 +46,7 @@ This will generate the printable game as *gene.pdf* .
 If you are fortunate enough to be on a Unix platform, you may also run the 
 program to using game.sh shell script, e.g.,
 
-  $ ./game.sh gene
+ $ ./game.sh gene
 
 This will generate similarly generate the printable game as *gene.pdf* .
 
