@@ -1,5 +1,6 @@
 Assemble yourself
 =================
+
 Assemble yourself is a paper-printable bioinformatics boardgame which is designed to be educational, fun and engaging. 
 It introduces basic genetics and Next Generation Sequencing (NGS) through a a puzzle-like problem. 
 
@@ -54,6 +55,13 @@ read length by editing *settings.pl*.
 
 For the impatient, a few pregenerated games are available in the examples
 folder of this repository.
+
+Contributors
+============
+
+Christian Theil Have - idea development and implementation
+Emil Vincent Appel -  beta testing and idea development 
+Jette Bork-Jensen - idea development
 
 
 Copyright
