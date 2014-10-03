@@ -59,9 +59,9 @@ folder of this repository.
 Contributors
 ============
 
-Christian Theil Have - idea development and implementation
-Emil Vincent Appel -  beta testing and idea development 
-Jette Bork-Jensen - idea development
+* Christian Theil Have - idea development and implementation
+* Emil Vincent Appel -  beta testing and idea development 
+* Jette Bork-Jensen - idea development
 
 
 Copyright
