@@ -17,5 +17,12 @@ random_split_seq_min(Seq, Part1, Part2,MinLen2) :-
 	length(Part2,L2),
 	append(Part1,Part2,Seq).
 
+atom_concat_list([Atom],Atom).
+
+atom_concat_list([X,Y|Xs],Atom) :-
+	atom_concat(X,Y,Z),
+	!,
+	atom_concat_list([Z|Xs],Atom).
+
 
 

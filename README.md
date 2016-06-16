@@ -59,8 +59,11 @@ folder of this repository.
 Contributors
 ============
 
-* Emil Vincent Appel -  beta testing and contributions to idea development 
-* Jette Bork-Jensen - contributions to idea development
+The game was written by Christian Theil Have. Emil Vincent Appel volunteered time
+for beta testing and brainstorming ideas and Jette Bork-Jensen also contributed
+with ideas. Some of the code is derived from the LoSt framework 
+(https://github.com/cth/the-lost-framework) written by Henning Christiansen, Ole Torp Lassen, 
+Matthieu Petit and my self (Christian Theil Have). 
 
 
 Copyright

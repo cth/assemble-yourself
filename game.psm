@@ -390,7 +390,6 @@ make_latex(Reads,ReadStrands,ReadLen,Genome,Alignment,ORF,MutantProtein,Consensu
 	writeln('\\end{sidewaysfigure}'),
 	!,
 
-
 	writeln('\\end{document}').
 
 testr :-
@@ -440,7 +439,11 @@ go :-
 	write_fasta(1,Reads),
 	secret_protein(Secret),
 	append(Secret,['.tex'],TexFileList),
+	writeln(TexFileList),
+
 	atom_concat_list(TexFileList,TexFile),
+	writeln(TexFile),
+
 	tell(TexFile),
 	make_latex(Reads,ReadStrands,ReadSize,Genome,AlignmentSorted,ProtPos,MutantProtein, Consensus),
 	told,
