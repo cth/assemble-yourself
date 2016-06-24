@@ -39,10 +39,28 @@ make_genome(Genome,Size,BuriedProteinDNA,GenomeProtKey) :-
 	append(K1,ORF,Tmp1),
 	append(Tmp1,K2,GenomeProtKey).
 
-make_reads(Genome,ReadSize,MinDepth,DepthsOut,ReadsOut,Alignment) :-
+make_reads(_Genome,_ReadSize,_MinDepth,_DepthsOut,_ReadsOut,_Alignment,0) :-
+	writeln('failed to generate solution with few enough reads, stopping'),
+	halt.
+
+make_reads(Genome,ReadSize,MinDepth,DepthsOut,ReadsOut,Alignment, AttemptsLeft) :-
 	length(Genome,L),
 	rep(L,0,DepthsIn),
-	make_reads_rec(Genome,ReadSize,MinDepth,DepthsIn,DepthsOut,[],ReadsOut,[],Alignment).
+	make_reads_rec(Genome,ReadSize,MinDepth,DepthsIn,DepthsOutTRY,[],ReadsOutTRY,[],AlignmentTRY),
+	%% Enforce max reads constraint
+	maxreads(MaxReads),
+	length(ReadsOutTRY,NumReads),
+	((MaxReads >= NumReads) ->
+		DepthsOut=DepthsOutTRY,
+		ReadsOut=ReadsOutTRY,
+		Alignment=AlignmentTRY
+		; 
+		sleep(1),
+		writeln('retry'),
+		AttempsLeft is AttemptsLeft - 1,
+		writeln('failed to generate solution with few enough reads, retrying'),
+		make_reads(Genome,ReadSize,MinDepth,DepthsOut,ReadsOut,Alignment, AttemptsLeft)
+	).
 
 make_reads_rec(_Genome,_ReadSize,MinDepth,DepthsInOut,DepthsInOut,ReadsInOut,ReadsInOut,Consensus,Consensus) :-
 	forall(member(DI,DepthsInOut), DI >= MinDepth).
@@ -195,8 +213,8 @@ mutate_read([X|Xs],[Y|Ys]) :-
 	mutate_read(Xs,Ys).
 
 mutate_triplet(T1,T2) :-
-	msw(synonymous_triplet_mutation,Syn),
-	msw(mutate_triplet(Syn,T1),T2).
+	soft_msw(synonymous_triplet_mutation,Syn),
+	soft_msw(mutate_triplet(Syn,T1),T2).
 
 mutate_protein_dna([],[]).
 mutate_protein_dna([X1,X2,X3|Xs],[Y1,Y2,Y3|Ys]) :-
@@ -316,7 +334,6 @@ latex_make_scaffold(GenomeLen,Genome) :-
 		writeln('\\\\'))),
 	writeln('\\hline'),
 
-
 	writeln('\\hline'),
 	latex_make_nucleotide_entry(GenomeLen,forward,PrefixRev,InBetween,SuffixRev),
 	latex_make_amino_acid_entry(GenomeLen,forward,PrefixRev,InBetween,SuffixRev),
@@ -404,6 +421,15 @@ upcase(Low,Up) :-
 	UpCode is LowCode - 32,
 	atom_codes(Up,[UpCode]).
 
+number_of_mutations([],[],0).
+number_of_mutations([Same|Xs],[Same|Ys],N) :-
+	!,
+	number_of_mutations(Xs,Ys,N).
+
+number_of_mutations([X|Xs],[Y|Ys],N1) :-
+	number_of_mutations(Xs,Ys,N),
+	N1 is N + 1.
+
 go(BuriedProtein) :-
 	assert(secret_protein(BuriedProtein)),
 	go.
@@ -418,13 +444,23 @@ go :-
 	translate(11,ProtDNA,BuriedProtein),
 	mutate_protein_dna(ProtDNA,ProtMutantDNA),
 	translate(11,ProtMutantDNA,MutantProtein),
+
+	writeln('trying to mutate protein'),
+	writeln(MutantProtein),
 	MutantProtein \= BuriedProtein,
+	number_of_mutations(MutantProtein,BuriedProtein,NumMut),
+	min_mutations(MinMut),
+	max_mutations(MaxMut),
+	NumMut >= MinMut,
+	MaxMut >= NumMut,
+	
 
 	%% Make genome containing protein
 	make_genome(Genome,GenomeSize,ProtDNA,ProtPos),
 
 	%% Make random reads for genome 
-	make_reads(Genome,ReadSize,MinDepth,Depths,Reads,Alignment),
+	failure_retries(Retries),
+	make_reads(Genome,ReadSize,MinDepth,Depths,Reads,Alignment,Retries),
 
 	%% Indicate that some reads map to the reverse strand
 	findall(Strand,(member(_,Reads),msw(strand,Strand)),ReadStrands),
