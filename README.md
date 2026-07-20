@@ -23,6 +23,48 @@ To get the most out the game, players should have been introduced to/be familiar
 and concepts like DNA, base-pairing, amino acid, strand, reading frame, gene and codon before playing the game.
 
 
+Play in your browser
+====================
+
+A web version of the game lives in the `docs/` folder and is meant to be
+published with GitHub Pages. It needs no installation: everything, including the
+genetic-code reasoning, runs client-side in the browser using
+[Tau Prolog](http://tau-prolog.org/).
+
+The web game includes:
+
+* An interactive **tutorial** that introduces the central dogma, DNA and
+  base-pairing, codons and the genetic code, reading frames, and next-generation
+  sequencing (reads, coverage, errors) before you start.
+* A **playable board** where you drag and flip the reads to assemble them. The
+  consensus sequence and a live six-frame translation (computed by Prolog) update
+  as you go, so you can hunt for the open reading frame and the hidden protein.
+* A **"Create a class game"** page for teachers: pick any word made of
+  amino-acid letters and get a single shareable link. The secret word is packed
+  into the link (obfuscated, not encrypted), and generation is deterministic, so
+  every student who opens the link gets exactly the same puzzle. The page also
+  shows a solution preview you can print.
+
+Running it locally
+-------------------
+
+Serve the `docs/` folder over HTTP (opening `index.html` from disk also works):
+
+    cd docs
+    python3 -m http.server 8000
+    # then open http://localhost:8000/
+
+Publishing with GitHub Pages
+----------------------------
+
+This repository ships a workflow (`.github/workflows/pages.yml`) that deploys the
+`docs/` folder to GitHub Pages. After merging, enable it once under
+**Settings → Pages → Build and deployment → Source = GitHub Actions**. The site
+then updates automatically on every push. (Alternatively, choose
+**Deploy from a branch** and point Pages at the `docs/` folder of the default
+branch.)
+
+
 Running the program
 ===================
 

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Assemble Yourself — a browser NGS assembly puzzle</title>
+  <meta name="description" content="An educational bioinformatics game: assemble noisy sequencing reads, build the consensus, translate the reading frames and uncover the hidden protein word." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AC%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/">
+      <span class="dna">🧬</span>
+      <span>Assemble&nbsp;Yourself</span>
+    </a>
+    <nav class="topnav">
+      <a href="#/learn" data-nav="learn">Learn</a>
+      <a href="#/play" data-nav="play">Play</a>
+      <a href="#/create" data-nav="create">Class game</a>
+      <a class="ext" href="https://github.com/cth/assemble-yourself" target="_blank" rel="noopener">Source</a>
+    </nav>
+  </header>
+
+  <main id="app" aria-live="polite"><!-- views render here --></main>
+
+  <footer class="footer">
+    <p>
+      A web adaptation of <a href="https://github.com/cth/assemble-yourself" target="_blank" rel="noopener">Assemble Yourself</a>
+      by Christian Theil Have. The Prolog reasoning runs in your browser via
+      <a href="http://tau-prolog.org/" target="_blank" rel="noopener">Tau&nbsp;Prolog</a>. Released under the GNU GPL v3.
+    </p>
+  </footer>
+
+  <!-- Tau Prolog engine -->
+  <!-- tau-prolog.lists.js auto-registers its `lists` module against the global
+       `pl` created by the core script when loaded as a classic browser script. -->
+  <script src="js/vendor/tau-prolog.core.js"></script>
+  <script src="js/vendor/tau-prolog.lists.js"></script>
+
+  <!-- Game code -->
+  <script src="js/biology.js"></script>
+  <script src="js/prolog.js"></script>
+  <script src="js/generate.js"></script>
+  <script src="js/share.js"></script>
+  <script src="js/intro.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
