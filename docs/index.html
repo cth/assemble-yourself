@@ -15,10 +15,11 @@
       <span>Assemble&nbsp;Yourself</span>
     </a>
     <nav class="topnav">
-      <a href="#/learn" data-nav="learn">Learn</a>
-      <a href="#/play" data-nav="play">Play</a>
-      <a href="#/create" data-nav="create">Class game</a>
-      <a class="ext" href="https://github.com/cth/assemble-yourself" target="_blank" rel="noopener">Source</a>
+      <a href="#/learn" data-nav="learn" data-i18n="nav.learn">Learn</a>
+      <a href="#/play" data-nav="play" data-i18n="nav.play">Play</a>
+      <a href="#/create" data-nav="create" data-i18n="nav.create">Class game</a>
+      <a class="ext" href="https://github.com/cth/assemble-yourself" target="_blank" rel="noopener" data-i18n="nav.source">Source</a>
+      <select id="lang-select" class="lang-select" aria-label="Language"></select>
     </nav>
   </header>
 
@@ -39,6 +40,7 @@
   <script src="js/vendor/tau-prolog.lists.js"></script>
 
   <!-- Game code -->
+  <script src="js/i18n.js"></script>
   <script src="js/biology.js"></script>
   <script src="js/prolog.js"></script>
   <script src="js/generate.js"></script>

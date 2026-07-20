@@ -2,13 +2,8 @@
 (function () {
   "use strict";
 
-  var AA_NAMES = {
-    a: "Alanine", c: "Cysteine", d: "Aspartate", e: "Glutamate", f: "Phenylalanine",
-    g: "Glycine", h: "Histidine", i: "Isoleucine", k: "Lysine", l: "Leucine",
-    m: "Methionine", n: "Asparagine", p: "Proline", q: "Glutamine", r: "Arginine",
-    s: "Serine", t: "Threonine", v: "Valine", w: "Tryptophan", y: "Tyrosine"
-  };
-  function aaName(atom) { return AA_NAMES[atom] || atom; }
+  function T() { return window.I18N.t.apply(null, arguments); }
+  function aaName(atom) { return window.I18N.aaName(atom); }
 
   // IUPAC complement map (handles ambiguity codes and gaps for reverse frames).
   var COMP = {
@@ -37,16 +32,16 @@
   function renderPlay(app, config) {
     var h = window.h;
     app.innerHTML = "";
-    app.appendChild(h("div", { class: "loading" }, ["Generating puzzle…"]));
+    app.appendChild(h("div", { class: "loading" }, [T("game.loading")]));
 
     window.Generator.generate(config.word, config).then(function (puzzle) {
       buildBoard(app, puzzle);
     }).catch(function (err) {
       app.innerHTML = "";
       app.appendChild(h("div", { class: "error-box" }, [
-        h("h2", {}, ["Could not build that puzzle"]),
+        h("h2", {}, [T("game.errTitle")]),
         h("p", {}, [err.message]),
-        h("a", { class: "btn", href: "#/play" }, ["Try the default puzzle"])
+        h("a", { class: "btn", href: "#/play" }, [T("game.errBack")])
       ]));
     });
   }
@@ -71,18 +66,15 @@
     var feedback = h("div", { class: "answer-feedback" }, []);
     var header = h("section", { class: "game-head" }, [
       h("div", {}, [
-        h("h1", {}, ["Assemble the reads"]),
-        h("p", { class: "sub" }, [
-          "Reconstruct the DNA, then read the reading frames to find the hidden ",
-          h("strong", {}, [String(puzzle.word.length)]), "-letter protein."
-        ])
+        h("h1", {}, [T("game.title")]),
+        subP("game.sub", { n: puzzle.word.length })
       ]),
       h("div", { class: "game-tools" }, [
-        btn(h, "⟲ Reset alignment", function () { reads.forEach(function (r) { r.offset = 0; r.reversed = false; }); redrawAll(); }),
-        btn(h, "💡 Nudge a read", nudge),
-        btn(h, "✓ Check consensus", checkConsensus),
-        btn(h, "🔑 Reveal solution", revealSolution, "btn-ghost"),
-        h("a", { class: "btn btn-ghost", href: printHref(puzzle) }, ["🖨 Paper version"])
+        btn(h, T("game.reset"), function () { reads.forEach(function (r) { r.offset = 0; r.reversed = false; }); redrawAll(); }),
+        btn(h, T("game.nudge"), nudge),
+        btn(h, T("game.check"), checkConsensus),
+        btn(h, T("game.reveal"), revealSolution, "btn-ghost"),
+        h("a", { class: "btn btn-ghost", href: printHref(puzzle) }, [T("game.paper")])
       ])
     ]);
     app.appendChild(header);
@@ -108,10 +100,10 @@
     }
 
     boardInner.appendChild(h("div", { class: "row-label-wrap" }, [
-      h("div", { class: "row-label" }, ["position"]), ruler
+      h("div", { class: "row-label" }, [T("game.lblPosition")]), ruler
     ]));
     boardInner.appendChild(h("div", { class: "row-label-wrap" }, [
-      h("div", { class: "row-label" }, ["primers"]), refRow
+      h("div", { class: "row-label" }, [T("game.lblPrimers")]), refRow
     ]));
 
     // reads
@@ -122,7 +114,7 @@
       var strip = h("div", { class: "strip", "data-id": r.id }, []);
       track.appendChild(strip);
       readEls[r.id] = { strip: strip };
-      var flip = h("button", { class: "flip-btn", title: "Flip to the other strand" }, ["⟲"]);
+      var flip = h("button", { class: "flip-btn", title: T("game.flip") }, ["⟲"]);
       flip.onclick = function () { r.reversed = !r.reversed; drawStrip(r); recompute(); };
       readsWrap.appendChild(h("div", { class: "row-label-wrap read-row" }, [
         h("div", { class: "row-label read-label" }, [flip]), track
@@ -138,24 +130,24 @@
       depthRow.appendChild(h("div", { class: "cell depth-cell" }, [h("span", { class: "depth-bar" }, [])]));
       consRow.appendChild(h("div", { class: "cell cons-cell" }, [""]));
     }
-    boardInner.appendChild(h("div", { class: "row-label-wrap" }, [h("div", { class: "row-label" }, ["depth"]), depthRow]));
-    boardInner.appendChild(h("div", { class: "row-label-wrap" }, [h("div", { class: "row-label" }, ["consensus"]), consRow]));
+    boardInner.appendChild(h("div", { class: "row-label-wrap" }, [h("div", { class: "row-label" }, [T("game.lblDepth")]), depthRow]));
+    boardInner.appendChild(h("div", { class: "row-label-wrap" }, [h("div", { class: "row-label" }, [T("game.lblConsensus")]), consRow]));
 
     // ---- translation panel ----
     var translationPanel = h("div", { class: "translation" }, [h("div", { class: "loading small" }, ["…"])]);
     app.appendChild(h("section", { class: "panel" }, [
-      h("h2", {}, ["Six-frame translation"]),
-      h("p", { class: "sub" }, ["Computed from your consensus by Prolog. Look for a run from a start ", h("b", {}, ["M"]), " to a stop ", h("b", {}, ["*"]), " (highlighted)."]),
+      h("h2", {}, [T("game.tlTitle")]),
+      subP("game.tlSub"),
       h("div", { class: "translation-scroll" }, [translationPanel])
     ]));
 
     // ---- answer ----
-    var answerInput = h("input", { class: "answer-in", type: "text", placeholder: "e.g. GENE", autocomplete: "off", spellcheck: "false" }, []);
-    var answerBtn = btn(h, "Submit protein", submitAnswer, "btn-primary");
+    var answerInput = h("input", { class: "answer-in", type: "text", placeholder: T("game.answerPh"), autocomplete: "off", spellcheck: "false" }, []);
+    var answerBtn = btn(h, T("game.submit"), submitAnswer, "btn-primary");
     answerInput.addEventListener("keydown", function (e) { if (e.key === "Enter") submitAnswer(); });
     app.appendChild(h("section", { class: "panel answer" }, [
-      h("h2", {}, ["Your answer"]),
-      h("p", { class: "sub" }, ["Type the amino-acid letters between the start and stop codons (one-letter codes, no leading M)."]),
+      h("h2", {}, [T("game.answerTitle")]),
+      subP("game.answerSub"),
       h("div", { class: "answer-row" }, [answerInput, answerBtn]),
       feedback
     ]));
@@ -233,12 +225,12 @@
       var fwd = consensus.map(function (x) { return x === "-" ? "?" : x; });
       var rev = jsRevComp(fwd);
       var frames = [
-        { label: "5′→3′ frame 1", strand: "f", offset: 0, seq: fwd },
-        { label: "5′→3′ frame 2", strand: "f", offset: 1, seq: fwd },
-        { label: "5′→3′ frame 3", strand: "f", offset: 2, seq: fwd },
-        { label: "3′→5′ frame 1", strand: "r", offset: 0, seq: rev },
-        { label: "3′→5′ frame 2", strand: "r", offset: 1, seq: rev },
-        { label: "3′→5′ frame 3", strand: "r", offset: 2, seq: rev }
+        { label: T("game.frameF", { n: 1 }), strand: "f", offset: 0, seq: fwd },
+        { label: T("game.frameF", { n: 2 }), strand: "f", offset: 1, seq: fwd },
+        { label: T("game.frameF", { n: 3 }), strand: "f", offset: 2, seq: fwd },
+        { label: T("game.frameR", { n: 1 }), strand: "r", offset: 0, seq: rev },
+        { label: T("game.frameR", { n: 2 }), strand: "r", offset: 1, seq: rev },
+        { label: T("game.frameR", { n: 3 }), strand: "r", offset: 2, seq: rev }
       ];
       Promise.all(frames.map(function (fr) {
         var slice = fr.seq.slice(fr.offset);
@@ -325,12 +317,12 @@
     function nudge() {
       if (won) return;
       var wrong = reads.filter(function (r) { return r.offset !== r.truePos || r.reversed !== r.trueReverse; });
-      if (!wrong.length) { flash(feedback, "Every read is already correctly placed!", "ok"); return; }
+      if (!wrong.length) { flash(feedback, T("game.fbAllPlaced"), "ok"); return; }
       var r = wrong[0];
       r.offset = r.truePos; r.reversed = r.trueReverse;
       readEls[r.id].strip.style.left = (r.offset * CELL) + "px";
       recompute();
-      flash(feedback, "Placed one read for you. " + (wrong.length - 1) + " still to align.", "hint");
+      flash(feedback, T("game.fbNudged", { n: wrong.length - 1 }), "hint");
     }
 
     function checkConsensus() {
@@ -341,27 +333,27 @@
         var set = CODE_SET[consensus[col]] || consensus[col];
         if (set.indexOf(puzzle.genome[col]) === -1) wrongCols++;
       }
-      if (covered < L) flash(feedback, covered + " of " + L + " columns covered. Keep aligning reads to fill the gaps.", "hint");
-      else if (wrongCols === 0) flash(feedback, "Consensus matches the true sequence at every column. Now translate and read off the protein!", "ok");
-      else flash(feedback, wrongCols + " column(s) disagree with a clean assembly — check your alignment there.", "warn");
+      if (covered < L) flash(feedback, T("game.fbCovered", { c: covered, L: L }), "hint");
+      else if (wrongCols === 0) flash(feedback, T("game.fbConsOk"), "ok");
+      else flash(feedback, T("game.fbConsWrong", { n: wrongCols }), "warn");
     }
 
     function revealSolution() {
       reads.forEach(function (r) { r.offset = r.truePos; r.reversed = r.trueReverse; readEls[r.id].strip.style.left = (r.offset * CELL) + "px"; });
       recompute();
-      flash(feedback, "Solution revealed. The hidden protein is " + puzzle.word + ".", "hint");
+      flash(feedback, T("game.fbRevealed", { word: puzzle.word }), "hint");
     }
 
     function submitAnswer() {
       var guess = answerInput.value.toUpperCase().replace(/[^A-Z]/g, "");
-      if (!guess) { flash(feedback, "Type the protein's one-letter codes first.", "warn"); return; }
+      if (!guess) { flash(feedback, T("game.fbEmpty"), "warn"); return; }
       if (guess === puzzle.word) {
         won = true;
-        flash(feedback, "🎉 Correct! You uncovered " + puzzle.word + ". Eternal bioinformatics fame is yours.", "win");
+        flash(feedback, T("game.fbWin", { word: puzzle.word }), "win");
       } else if (("M" + guess) === "M" + puzzle.word) {
-        flash(feedback, "Drop the leading M — report only the amino acids after the start codon.", "warn");
+        flash(feedback, T("game.fbDropM"), "warn");
       } else {
-        flash(feedback, "Not the hidden protein yet. Refine your alignment, rebuild the consensus and re-read the frames.", "warn");
+        flash(feedback, T("game.fbWrong"), "warn");
       }
     }
 
@@ -380,10 +372,10 @@
     var h = window.h;
     app.innerHTML = "";
 
-    var wordIn = h("input", { class: "big-in", type: "text", value: "GENE", placeholder: "A word made of amino-acid letters" }, []);
+    var wordIn = h("input", { class: "big-in", type: "text", value: "GENE", placeholder: "GENE" }, []);
     var depthIn = h("input", { type: "number", min: "2", max: "6", value: "3" }, []);
     var readIn = h("input", { type: "number", min: "6", max: "14", value: "10" }, []);
-    var seedIn = h("input", { type: "text", placeholder: "(optional) fixed seed", value: "" }, []);
+    var seedIn = h("input", { type: "text", placeholder: T("create.seedPh"), value: "" }, []);
     var validityNote = h("div", { class: "validity" }, []);
     var linkBox = h("div", { class: "link-box" }, []);
     var preview = h("div", { class: "solution-preview" }, []);
@@ -405,16 +397,18 @@
       validityNote.innerHTML = "";
       if (v.invalid.length) {
         validityNote.className = "validity warn";
-        validityNote.appendChild(document.createTextNode(
-          "Skipping letters that are not amino acids: " + v.invalid.join(", ").toUpperCase() +
-          ". Usable letters: " + (v.letters.join("").toUpperCase() || "(none)") + "."));
+        validityNote.appendChild(document.createTextNode(T("create.vInvalid", {
+          bad: v.invalid.join(", ").toUpperCase(),
+          ok: v.letters.join("").toUpperCase() || "—"
+        })));
       } else if (v.letters.length) {
         validityNote.className = "validity ok";
-        validityNote.appendChild(document.createTextNode(
-          v.letters.length + " amino acids: " + v.letters.join("").toUpperCase() + "."));
+        validityNote.appendChild(document.createTextNode(T("create.vOk", {
+          n: v.letters.length, letters: v.letters.join("").toUpperCase()
+        })));
       } else {
         validityNote.className = "validity warn";
-        validityNote.appendChild(document.createTextNode("Enter a word using the 20 amino-acid letters (no B, J, O, U, X, Z)."));
+        validityNote.appendChild(document.createTextNode(T("create.vEmpty")));
       }
       return v;
     }
@@ -427,17 +421,17 @@
 
       linkBox.innerHTML = "";
       var urlField = h("input", { class: "url-field", type: "text", readonly: "readonly", value: url }, []);
-      var copyBtn = btn(h, "Copy link", function () {
+      var copyBtn = btn(h, T("create.copy"), function () {
         urlField.select();
         navigator.clipboard && navigator.clipboard.writeText(url);
-        copyBtn.textContent = "Copied!";
-        setTimeout(function () { copyBtn.textContent = "Copy link"; }, 1500);
+        copyBtn.textContent = T("create.copied");
+        setTimeout(function () { copyBtn.textContent = T("create.copy"); }, 1500);
       }, "btn-primary");
-      linkBox.appendChild(h("label", {}, ["Shareable link (the word is hidden inside the link)"]));
+      linkBox.appendChild(h("label", {}, [T("create.linkLabel")]));
       linkBox.appendChild(h("div", { class: "url-row" }, [urlField, copyBtn]));
       linkBox.appendChild(h("div", { class: "link-actions" }, [
-        h("a", { class: "btn", href: url }, ["Open the puzzle"]),
-        h("a", { class: "btn btn-ghost", href: location.origin + location.pathname + "#/print?g=" + window.Share.encodeConfig(cfg) }, ["🖨 Printable paper version"])
+        h("a", { class: "btn", href: url }, [T("create.open")]),
+        h("a", { class: "btn btn-ghost", href: location.origin + location.pathname + "#/print?g=" + window.Share.encodeConfig(cfg) }, [T("create.paper")])
       ]));
 
       buildSolutionPreview(preview, cfg);
@@ -449,20 +443,19 @@
     });
 
     app.appendChild(h("section", { class: "create" }, [
-      h("h1", {}, ["Create a class game"]),
+      h("h1", {}, [T("create.title")]),
       h("p", { class: "sub" }, [
-        "Bury any word inside a gene and share one link with your students. ",
-        "The word is only made of the 20 amino-acid letters: ",
-        h("code", {}, ["A C D E F G H I K L M N P Q R S T V W Y"]), "."
+        T("create.sub") + " ",
+        h("code", {}, ["A C D E F G H I K L M N P Q R S T V W Y"])
       ]),
       h("div", { class: "form-grid" }, [
-        field(h, "Secret word", wordIn),
-        field(h, "Minimum coverage depth", depthIn),
-        field(h, "Read length", readIn),
-        field(h, "Seed (optional)", seedIn)
+        field(h, T("create.fWord"), wordIn),
+        field(h, T("create.fDepth"), depthIn),
+        field(h, T("create.fRead"), readIn),
+        field(h, T("create.fSeed"), seedIn)
       ]),
       validityNote,
-      h("div", { class: "create-actions" }, [ btn(h, "Generate link & preview", generateLink, "btn-primary") ]),
+      h("div", { class: "create-actions" }, [ btn(h, T("create.generate"), generateLink, "btn-primary") ]),
       linkBox,
       preview
     ]));
@@ -474,30 +467,30 @@
   function buildSolutionPreview(node, cfg) {
     var h = window.h;
     node.innerHTML = "";
-    node.appendChild(h("div", { class: "loading small" }, ["Building solution preview…"]));
+    node.appendChild(h("div", { class: "loading small" }, [T("create.building")]));
     window.Generator.generate(cfg.word, cfg).then(function (p) {
       node.innerHTML = "";
-      node.appendChild(h("h2", {}, ["Teacher solution (keep hidden from students)"]));
+      node.appendChild(h("h2", {}, [T("create.solTitle")]));
       node.appendChild(h("div", { class: "sol-grid" }, [
-        solItem(h, "Hidden protein", p.word),
-        solItem(h, "Genome length", String(p.genomeLen) + " bp"),
-        solItem(h, "Number of reads", String(p.reads.length)),
-        solItem(h, "Coverage depth", String(cfg.minDepth) + "×")
+        solItem(h, T("create.solProtein"), p.word),
+        solItem(h, T("create.solLen"), String(p.genomeLen) + " " + T("create.bp")),
+        solItem(h, T("create.solReads"), String(p.reads.length)),
+        solItem(h, T("create.solDepth"), String(cfg.minDepth) + "×")
       ]));
       node.appendChild(h("div", { class: "sol-seq" }, [
-        h("span", { class: "sol-seq-label" }, ["Forward strand: "]),
+        h("span", { class: "sol-seq-label" }, [T("create.forward") + " "]),
         h("code", {}, [p.genome.join("").toUpperCase()])
       ]));
       node.appendChild(h("div", { class: "sol-seq" }, [
-        h("span", { class: "sol-seq-label" }, ["Gene (ORF): "]),
+        h("span", { class: "sol-seq-label" }, [T("create.gene") + " "]),
         h("code", {}, [
           p.orf.slice(0, 3).join("").toUpperCase(), " ",
           p.orf.slice(3, p.orf.length - 3).join("").toUpperCase(), " ",
           p.orf.slice(p.orf.length - 3).join("").toUpperCase()
         ]),
-        h("span", { class: "small" }, [" (start · protein · stop)"])
+        h("span", { class: "small" }, [" " + T("create.geneNote")])
       ]));
-      node.appendChild(h("div", { class: "print-hint small" }, ["Tip: use your browser's Print to keep a paper copy of this solution."]));
+      node.appendChild(h("div", { class: "print-hint small" }, [T("create.tip")]));
     }).catch(function (e) {
       node.innerHTML = "";
       node.appendChild(h("p", { class: "validity warn" }, [e.message]));
@@ -528,16 +521,16 @@
     }));
 
     var iupac = [["R", "A/G"], ["Y", "C/T"], ["S", "C/G"], ["W", "A/T"], ["K", "G/T"], ["M", "A/C"],
-      ["B", "C/G/T"], ["D", "A/G/T"], ["H", "A/C/T"], ["V", "A/C/G"], ["N", "any"]];
+      ["B", "C/G/T"], ["D", "A/G/T"], ["H", "A/C/T"], ["V", "A/C/G"], ["N", T("print.iupacAny")]];
     var iupacTable = h("table", { class: "iupac-table" }, [
       h("tbody", {}, iupac.map(function (r) { return h("tr", {}, [h("td", {}, [r[0]]), h("td", {}, [r[1]])]); }))
     ]);
 
     return h("details", { class: "reference" }, [
-      h("summary", {}, ["Reference: genetic code & IUPAC codes"]),
+      h("summary", {}, [T("game.refSummary")]),
       h("div", { class: "reference-body" }, [
-        h("div", {}, [h("h3", {}, ["Standard genetic code"]), grid]),
-        h("div", {}, [h("h3", {}, ["IUPAC ambiguity codes"]), iupacTable])
+        h("div", {}, [h("h3", {}, [T("game.refCode")]), grid]),
+        h("div", {}, [h("h3", {}, [T("game.refIupac")]), iupacTable])
       ])
     ]);
   }
@@ -559,13 +552,13 @@
   function renderPrint(app, config) {
     var h = window.h;
     app.innerHTML = "";
-    app.appendChild(h("div", { class: "loading" }, ["Building the printable game…"]));
+    app.appendChild(h("div", { class: "loading" }, [T("print.building")]));
     window.Generator.generate(config.word, config).then(function (p) {
       buildPrintable(app, p);
     }).catch(function (err) {
       app.innerHTML = "";
       app.appendChild(h("div", { class: "error-box" }, [
-        h("h2", {}, ["Could not build that puzzle"]), h("p", {}, [err.message])
+        h("h2", {}, [T("print.errTitle")]), h("p", {}, [err.message])
       ]));
     });
   }
@@ -609,41 +602,27 @@
     app.innerHTML = "";
 
     var controls = h("div", { class: "print-controls" }, [
-      btn(h, "🖨 Print / Save as PDF", function () { window.print(); }, "btn-primary"),
-      h("a", { class: "btn btn-ghost", href: printHref(p).replace("#/print", "#/play") }, ["← Back to the online game"]),
-      h("span", { class: "small" }, ["Tip: enable “Background graphics” in the print dialog; choose landscape for long genomes."])
+      btn(h, T("print.printBtn"), function () { window.print(); }, "btn-primary"),
+      h("a", { class: "btn btn-ghost", href: printHref(p).replace("#/print", "#/play") }, [T("print.back")]),
+      h("span", { class: "small" }, [T("print.tip")])
     ]);
 
     // ---- page 1: story + reads to cut out ----
     var story = h("section", {}, [
-      h("h1", {}, ["Assemble Yourself"]),
-      h("p", { class: "muted" }, ["A pen-and-paper NGS assembly puzzle. Print this, grab scissors, and reconstruct the gene."]),
-      h("h2", {}, ["The mission"]),
+      h("h1", {}, [T("print.title")]),
+      h("p", { class: "muted" }, [T("print.subtitle")]),
+      h("h2", {}, [T("print.mission")]),
       h("div", { class: "story" }, [
-        h("p", {}, [
-          "An interesting protein with amino-acid sequence ", h("span", { class: "highlight" }, [mutant]),
-          " was found in the bacterium ", h("em", {}, ["S. Equencia"]), ". Does a ", h("b", {}, ["homologue"]),
-          " exist in the related species ", h("em", {}, ["B. Ionformatica"]), "?"
-        ]),
-        h("p", {}, [
-          "A lab amplified the matching region of ", h("em", {}, ["B. Ionformatica"]), " DNA with primers ",
-          "flanking the gene and sequenced it, yielding ", h("b", {}, [String(p.reads.length)]),
-          " short reads. About one base in twenty is a read error, and reads may come from either strand. ",
-          "The supercomputer is down — assemble them by hand!"
-        ]),
-        h("p", {}, [
-          h("b", {}, ["Your task: "]),
-          "cut out the reads, align them on the scaffold (flip a strip over to read the other strand), ",
-          "write the consensus sequence, then translate the reading frames to find the homologous protein ",
-          "and how it differs from ", h("span", { class: "highlight" }, [mutant]), "."
-        ])
+        window.I18N.rich("print.story1", { mutant: mutant }, "p"),
+        window.I18N.rich("print.story2", { n: p.reads.length }, "p"),
+        window.I18N.rich("print.task", { mutant: mutant }, "p")
       ]),
-      h("h2", {}, ["Reads — cut these out"]),
+      h("h2", {}, [T("print.readsHeading")]),
       h("div", { class: "cutouts" }, p.reads.map(function (r, i) {
         // Same table geometry as the scaffold, so cut strips line up exactly.
         var tds = r.bases.map(function (b) { return h("td", {}, [b.toUpperCase()]); });
         return h("div", { class: "cutout" }, [
-          h("div", { class: "cut-label" }, ["read " + (i + 1)]),
+          h("div", { class: "cut-label" }, [T("print.readLabel", { n: i + 1 })]),
           h("table", { class: "cutstrip" }, [h("tbody", {}, [h("tr", {}, tds)])])
         ]);
       }))
@@ -651,40 +630,37 @@
 
     // ---- page 2: the scaffold / board ----
     var scaffold = h("section", { class: "page-break" }, [
-      h("h1", {}, ["Assembly scaffold"]),
-      h("p", { class: "muted" }, [
-        "Place your cut-out reads in the alignment area so overlapping bases agree. The shaded end ",
-        "cells are the known primer bases — anchor your reads to them. Then write the consensus and translate."
-      ]),
+      h("h1", {}, [T("print.scaffoldTitle")]),
+      h("p", { class: "muted" }, [T("print.scaffoldInstr")]),
       h("div", { class: "scaffold-wrap" }, [buildScaffold(h, L, primerLen, p)])
     ]);
 
     // ---- page 3: genetic code reference ----
     var reference = h("section", { class: "page-break" }, [
-      h("h1", {}, ["Reference tables"]),
+      h("h1", {}, [T("print.refTitle")]),
       h("div", { class: "two-col" }, [
-        h("div", {}, [h("h2", {}, ["Standard genetic code (table 11)"]), printCodeGrid(h)]),
-        h("div", {}, [h("h2", {}, ["IUPAC codes"]), printIupac(h)])
+        h("div", {}, [h("h2", {}, [T("print.refCode")]), printCodeGrid(h)]),
+        h("div", {}, [h("h2", {}, [T("print.refIupac")]), printIupac(h)])
       ])
     ]);
 
     // ---- page 4: teacher solution ----
     var solAlign = buildSolutionAlignment(h, L, primerLen, p);
     var solution = h("section", { class: "page-break" }, [
-      h("h1", {}, ["Solution — for the game master only"]),
+      h("h1", {}, [T("print.solTitle")]),
       h("div", { class: "sol-box" }, [
-        h("p", {}, [h("b", {}, ["Hidden protein (the answer): "]), h("span", { class: "highlight" }, [p.word])]),
-        h("p", {}, [h("b", {}, ["Reference protein shown in the story: "]), mutant, h("span", { class: "small" }, [" (differs from the answer by the mutated residues)"])]),
-        h("p", {}, [h("b", {}, ["Forward strand: "]), h("code", {}, [p.genome.join("").toUpperCase()])]),
+        h("p", {}, [h("b", {}, [T("print.solAnswerLbl") + " "]), h("span", { class: "highlight" }, [p.word])]),
+        h("p", {}, [h("b", {}, [T("print.solRefLbl") + " "]), mutant, h("span", { class: "small" }, [" " + T("print.solRefNote")])]),
+        h("p", {}, [h("b", {}, [T("print.forward") + " "]), h("code", {}, [p.genome.join("").toUpperCase()])]),
         h("p", {}, [
-          h("b", {}, ["Gene (ORF): "]),
+          h("b", {}, [T("print.gene") + " "]),
           h("code", {}, [p.orf.slice(0, 3).join("").toUpperCase() + " " +
             p.orf.slice(3, p.orf.length - 3).join("").toUpperCase() + " " +
             p.orf.slice(p.orf.length - 3).join("").toUpperCase()]),
-          h("span", { class: "small" }, [" (start · protein · stop)"])
+          h("span", { class: "small" }, [" " + T("print.geneNote")])
         ])
       ]),
-      h("h2", {}, ["Read alignment"]),
+      h("h2", {}, [T("print.alignTitle")]),
       h("div", { class: "scaffold-wrap" }, [solAlign])
     ]);
 
@@ -699,13 +675,13 @@
   function buildScaffold(h, L, primerLen, p) {
     var rows = [];
     rows.push(rulerRow(h, L));
-    ["frame +1", "frame +2", "frame +3"].forEach(function (lab) { rows.push(blankAaRow(h, L, lab)); });
-    rows.push(seqRow(h, L, primerLen, p, "forward 5′→3′"));
+    [1, 2, 3].forEach(function (n) { rows.push(blankAaRow(h, L, T("print.frameF", { n: n }))); });
+    rows.push(seqRow(h, L, primerLen, p, T("print.rowForward")));
     rows.push(spacerRow(h, L));
-    for (var i = 0; i < p.reads.length + 3; i++) rows.push(writeRow(h, L, i === 0 ? "alignment" : ""));
+    for (var i = 0; i < p.reads.length + 3; i++) rows.push(writeRow(h, L, i === 0 ? T("print.rowAlignment") : ""));
     rows.push(spacerRow(h, L));
-    rows.push(seqRow(h, L, primerLen, p, "reverse 3′→5′", true));
-    ["frame −1", "frame −2", "frame −3"].forEach(function (lab) { rows.push(blankAaRow(h, L, lab)); });
+    rows.push(seqRow(h, L, primerLen, p, T("print.rowReverse"), true));
+    [1, 2, 3].forEach(function (n) { rows.push(blankAaRow(h, L, T("print.frameR", { n: n }))); });
     return h("table", { class: "scaffold" }, [h("tbody", {}, rows)]);
   }
 
@@ -745,10 +721,10 @@
 
   // Solution alignment: each read placed at its true position and orientation.
   function buildSolutionAlignment(h, L, primerLen, p) {
-    var rows = [rulerRow(h, L), seqRow(h, L, primerLen, p, "forward 5′→3′")];
+    var rows = [rulerRow(h, L), seqRow(h, L, primerLen, p, T("print.rowForward"))];
     p.reads.slice().sort(function (a, b) { return a.truePos - b.truePos; }).forEach(function (r) {
       var displayed = r.trueReverse ? jsRevComp(r.bases) : r.bases.slice();
-      var cells = [h("th", { class: "rowlab" }, [(r.trueReverse ? "⟲ " : "") + "read"])];
+      var cells = [h("th", { class: "rowlab" }, [(r.trueReverse ? "⟲ " : "") + T("print.read")])];
       for (var c = 0; c < L; c++) {
         var inRead = c >= r.truePos && c < r.truePos + r.bases.length;
         var base = inRead ? displayed[c - r.truePos] : "";
@@ -757,7 +733,7 @@
       }
       rows.push(h("tr", {}, cells));
     });
-    var consCells = [h("th", { class: "rowlab" }, ["consensus"])];
+    var consCells = [h("th", { class: "rowlab" }, [T("print.consensus")])];
     for (var c2 = 0; c2 < L; c2++) consCells.push(h("td", { class: "write", style: "font-weight:700" }, [p.genome[c2].toUpperCase()]));
     rows.push(spacerRow(h, L));
     rows.push(h("tr", {}, consCells));
@@ -784,7 +760,7 @@
   }
   function printIupac(h) {
     var iupac = [["R", "A/G"], ["Y", "C/T"], ["S", "C/G"], ["W", "A/T"], ["K", "G/T"], ["M", "A/C"],
-      ["B", "C/G/T"], ["D", "A/G/T"], ["H", "A/C/T"], ["V", "A/C/G"], ["N", "any base"]];
+      ["B", "C/G/T"], ["D", "A/G/T"], ["H", "A/C/T"], ["V", "A/C/G"], ["N", T("print.iupacAny")]];
     return h("table", { class: "print-iupac" }, [h("tbody", {}, iupac.map(function (r) {
       return h("tr", {}, [h("td", {}, [r[0]]), h("td", {}, [r[1]])]);
     }))]);
@@ -798,6 +774,8 @@
   function field(h, label, input) {
     return h("label", { class: "field" }, [h("span", {}, [label]), input]);
   }
+  // <p class="sub"> with rich (bold/italic) content from an i18n key.
+  function subP(key, params) { var el = window.I18N.rich(key, params, "p"); el.className = "sub"; return el; }
   function solItem(h, k, v) { return h("div", { class: "sol-item" }, [h("span", {}, [k]), h("b", {}, [v])]); }
   function clampInt(v, lo, hi, dflt) { var n = parseInt(v, 10); if (isNaN(n)) return dflt; return Math.max(lo, Math.min(hi, n)); }
   function hashSeed(str) { var h = 2166136261 >>> 0; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }

@@ -54,8 +54,34 @@
     });
   }
 
+  // Fill in any element carrying a data-i18n key (nav links, etc.).
+  function applyStaticI18n() {
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      el.textContent = window.I18N.t(el.getAttribute("data-i18n"));
+    });
+  }
+
+  function setupLanguageSelector() {
+    var sel = document.getElementById("lang-select");
+    if (!sel) return;
+    sel.innerHTML = "";
+    window.I18N.locales.forEach(function (loc) {
+      var opt = document.createElement("option");
+      opt.value = loc;
+      opt.textContent = window.I18N.localeName(loc);
+      sel.appendChild(opt);
+    });
+    sel.value = window.I18N.getLocale();
+    sel.addEventListener("change", function () { window.I18N.setLocale(sel.value); });
+  }
+
   window.addEventListener("hashchange", route);
   window.addEventListener("DOMContentLoaded", function () {
+    document.documentElement.setAttribute("lang", window.I18N.getLocale());
+    setupLanguageSelector();
+    applyStaticI18n();
+    // Re-render the current view and refresh nav labels when the locale changes.
+    window.I18N.onChange(function () { applyStaticI18n(); route(); });
     // warm up the Prolog engine in the background
     window.Prolog.init().catch(function () {});
     route();

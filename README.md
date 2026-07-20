@@ -44,6 +44,10 @@ The web game includes:
   into the link (obfuscated, not encrypted), and generation is deterministic, so
   every student who opens the link gets exactly the same puzzle. The page also
   shows a solution preview you can print.
+* **Six languages.** The whole interface — tutorial, board, teacher page and the
+  printable game — is available in English, French, Spanish, Danish, German and
+  Italian, switchable from the top bar (the choice is remembered). Amino-acid
+  one-letter codes, codons and IUPAC letters stay in their international form.
 * A **printable pen-and-paper version** of the very same puzzle (the classic
   format): a story page, cut-out read strips, an assembly scaffold with primer
   anchors and blank reading-frame rows, the genetic-code and IUPAC reference

@@ -47,6 +47,8 @@ a:hover { text-decoration: underline; }
 .topnav a { color: var(--ink-soft); font-weight: 600; font-size: 15px; }
 .topnav a.active, .topnav a:hover { color: var(--ink); text-decoration: none; }
 .topnav a.active { color: var(--accent); }
+.lang-select { background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.lang-select:hover { border-color: var(--accent); }
 
 main { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 28px 24px 60px; }
 
