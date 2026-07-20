@@ -33,14 +33,15 @@
     if (path === "" || path === "home") { window.Intro.renderHome(app); return; }
     if (path === "learn") { window.Intro.renderLearn(app); return; }
     if (path === "create") { window.Game.renderCreate(app); return; }
-    if (path === "play") {
+    if (path === "play" || path === "print") {
       var params = window.Share.parseParams(query);
       var config = DEFAULT_CONFIG;
       if (params.g) {
         try { config = window.Share.decodeConfig(params.g); }
         catch (e) { config = DEFAULT_CONFIG; }
       }
-      window.Game.renderPlay(app, config);
+      if (path === "print") window.Game.renderPrint(app, config);
+      else window.Game.renderPlay(app, config);
       return;
     }
     // unknown route

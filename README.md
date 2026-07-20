@@ -44,6 +44,11 @@ The web game includes:
   into the link (obfuscated, not encrypted), and generation is deterministic, so
   every student who opens the link gets exactly the same puzzle. The page also
   shows a solution preview you can print.
+* A **printable pen-and-paper version** of the very same puzzle (the classic
+  format): a story page, cut-out read strips, an assembly scaffold with primer
+  anchors and blank reading-frame rows, the genetic-code and IUPAC reference
+  tables, and a game-master solution page. Reachable from the "Paper version"
+  button on the board or the teacher page; use the browser's Print / Save as PDF.
 
 Running it locally
 -------------------

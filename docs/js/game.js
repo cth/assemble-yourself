@@ -81,7 +81,8 @@
         btn(h, "⟲ Reset alignment", function () { reads.forEach(function (r) { r.offset = 0; r.reversed = false; }); redrawAll(); }),
         btn(h, "💡 Nudge a read", nudge),
         btn(h, "✓ Check consensus", checkConsensus),
-        btn(h, "🔑 Reveal solution", revealSolution, "btn-ghost")
+        btn(h, "🔑 Reveal solution", revealSolution, "btn-ghost"),
+        h("a", { class: "btn btn-ghost", href: printHref(puzzle) }, ["🖨 Paper version"])
       ])
     ]);
     app.appendChild(header);
@@ -436,6 +437,7 @@
       linkBox.appendChild(h("div", { class: "url-row" }, [urlField, copyBtn]));
       linkBox.appendChild(h("div", { class: "link-actions" }, [
         h("a", { class: "btn", href: url }, ["Open the puzzle"]),
+        h("a", { class: "btn btn-ghost", href: location.origin + location.pathname + "#/print?g=" + window.Share.encodeConfig(cfg) }, ["🖨 Printable paper version"])
       ]));
 
       buildSolutionPreview(preview, cfg);
@@ -540,6 +542,252 @@
     ]);
   }
 
+  // Build a "#/print?g=..." link that reproduces the exact same puzzle.
+  function printHref(puzzle) {
+    return "#/print?g=" + window.Share.encodeConfig({
+      word: puzzle.word,
+      minDepth: puzzle.options.minDepth,
+      readLen: puzzle.options.readLen,
+      errorRate: puzzle.options.errorRate,
+      seed: puzzle.seed
+    });
+  }
+
+  // ==========================================================================
+  //  PRINT  (the classic pen-and-paper board game)
+  // ==========================================================================
+  function renderPrint(app, config) {
+    var h = window.h;
+    app.innerHTML = "";
+    app.appendChild(h("div", { class: "loading" }, ["Building the printable game…"]));
+    window.Generator.generate(config.word, config).then(function (p) {
+      buildPrintable(app, p);
+    }).catch(function (err) {
+      app.innerHTML = "";
+      app.appendChild(h("div", { class: "error-box" }, [
+        h("h2", {}, ["Could not build that puzzle"]), h("p", {}, [err.message])
+      ]));
+    });
+  }
+
+  // Deterministically mutate a couple of residues so the printed story can ask
+  // players to find a *homologue* that differs slightly (as in the original).
+  function mutantReference(p) {
+    var letters = p.protein.slice();
+    var rng = mulberry(p.seed ^ 0x9e3779b9);
+    var n = Math.max(1, Math.round(letters.length * 0.25));
+    var positions = [];
+    var guard = 0;
+    while (positions.length < n && guard++ < 200) {
+      var idx = Math.floor(rng() * letters.length);
+      if (positions.indexOf(idx) === -1) positions.push(idx);
+    }
+    var alphabet = "acdefghiklmnpqrstvwy".split("");
+    positions.forEach(function (idx) {
+      var choice;
+      do { choice = alphabet[Math.floor(rng() * alphabet.length)]; } while (choice === letters[idx]);
+      letters[idx] = choice;
+    });
+    return letters.join("").toUpperCase();
+  }
+  function mulberry(seed) {
+    var s = seed >>> 0;
+    return function () {
+      s |= 0; s = (s + 0x6d2b79f5) | 0;
+      var t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function buildPrintable(app, p) {
+    var h = window.h;
+    var L = p.genomeLen;
+    var primerLen = p.options.primerLen;
+    var mutant = mutantReference(p);
+
+    app.innerHTML = "";
+
+    var controls = h("div", { class: "print-controls" }, [
+      btn(h, "🖨 Print / Save as PDF", function () { window.print(); }, "btn-primary"),
+      h("a", { class: "btn btn-ghost", href: printHref(p).replace("#/print", "#/play") }, ["← Back to the online game"]),
+      h("span", { class: "small" }, ["Tip: enable “Background graphics” in the print dialog; choose landscape for long genomes."])
+    ]);
+
+    // ---- page 1: story + reads to cut out ----
+    var story = h("section", {}, [
+      h("h1", {}, ["Assemble Yourself"]),
+      h("p", { class: "muted" }, ["A pen-and-paper NGS assembly puzzle. Print this, grab scissors, and reconstruct the gene."]),
+      h("h2", {}, ["The mission"]),
+      h("div", { class: "story" }, [
+        h("p", {}, [
+          "An interesting protein with amino-acid sequence ", h("span", { class: "highlight" }, [mutant]),
+          " was found in the bacterium ", h("em", {}, ["S. Equencia"]), ". Does a ", h("b", {}, ["homologue"]),
+          " exist in the related species ", h("em", {}, ["B. Ionformatica"]), "?"
+        ]),
+        h("p", {}, [
+          "A lab amplified the matching region of ", h("em", {}, ["B. Ionformatica"]), " DNA with primers ",
+          "flanking the gene and sequenced it, yielding ", h("b", {}, [String(p.reads.length)]),
+          " short reads. About one base in twenty is a read error, and reads may come from either strand. ",
+          "The supercomputer is down — assemble them by hand!"
+        ]),
+        h("p", {}, [
+          h("b", {}, ["Your task: "]),
+          "cut out the reads, align them on the scaffold (flip a strip over to read the other strand), ",
+          "write the consensus sequence, then translate the reading frames to find the homologous protein ",
+          "and how it differs from ", h("span", { class: "highlight" }, [mutant]), "."
+        ])
+      ]),
+      h("h2", {}, ["Reads — cut these out"]),
+      h("div", { class: "cutouts" }, p.reads.map(function (r, i) {
+        return h("div", { class: "cutout" }, [
+          h("div", { class: "cut-label" }, ["read " + (i + 1)]),
+          h("div", { class: "cut-cells" }, r.bases.map(function (b) { return h("span", {}, [b.toUpperCase()]); }))
+        ]);
+      }))
+    ]);
+
+    // ---- page 2: the scaffold / board ----
+    var scaffold = h("section", { class: "page-break" }, [
+      h("h1", {}, ["Assembly scaffold"]),
+      h("p", { class: "muted" }, [
+        "Place your cut-out reads in the alignment area so overlapping bases agree. The shaded end ",
+        "cells are the known primer bases — anchor your reads to them. Then write the consensus and translate."
+      ]),
+      h("div", { class: "scaffold-wrap" }, [buildScaffold(h, L, primerLen, p)])
+    ]);
+
+    // ---- page 3: genetic code reference ----
+    var reference = h("section", { class: "page-break" }, [
+      h("h1", {}, ["Reference tables"]),
+      h("div", { class: "two-col" }, [
+        h("div", {}, [h("h2", {}, ["Standard genetic code (table 11)"]), printCodeGrid(h)]),
+        h("div", {}, [h("h2", {}, ["IUPAC codes"]), printIupac(h)])
+      ])
+    ]);
+
+    // ---- page 4: teacher solution ----
+    var solAlign = buildSolutionAlignment(h, L, primerLen, p);
+    var solution = h("section", { class: "page-break" }, [
+      h("h1", {}, ["Solution — for the game master only"]),
+      h("div", { class: "sol-box" }, [
+        h("p", {}, [h("b", {}, ["Hidden protein (the answer): "]), h("span", { class: "highlight" }, [p.word])]),
+        h("p", {}, [h("b", {}, ["Reference protein shown in the story: "]), mutant, h("span", { class: "small" }, [" (differs from the answer by the mutated residues)"])]),
+        h("p", {}, [h("b", {}, ["Forward strand: "]), h("code", {}, [p.genome.join("").toUpperCase()])]),
+        h("p", {}, [
+          h("b", {}, ["Gene (ORF): "]),
+          h("code", {}, [p.orf.slice(0, 3).join("").toUpperCase() + " " +
+            p.orf.slice(3, p.orf.length - 3).join("").toUpperCase() + " " +
+            p.orf.slice(p.orf.length - 3).join("").toUpperCase()]),
+          h("span", { class: "small" }, [" (start · protein · stop)"])
+        ])
+      ]),
+      h("h2", {}, ["Read alignment"]),
+      h("div", { class: "scaffold-wrap" }, [solAlign])
+    ]);
+
+    app.appendChild(h("div", { class: "printable" }, [
+      controls,
+      h("div", { class: "paper" }, [story, scaffold, reference, solution])
+    ]));
+  }
+
+  // Blank scaffold: ruler, forward frames, forward sequence w/ primers, blank
+  // alignment rows, reverse sequence, reverse frames.
+  function buildScaffold(h, L, primerLen, p) {
+    var rows = [];
+    rows.push(rulerRow(h, L));
+    ["frame +1", "frame +2", "frame +3"].forEach(function (lab) { rows.push(blankAaRow(h, L, lab)); });
+    rows.push(seqRow(h, L, primerLen, p, "forward 5′→3′"));
+    rows.push(spacerRow(h, L));
+    for (var i = 0; i < p.reads.length + 3; i++) rows.push(writeRow(h, L, i === 0 ? "alignment" : ""));
+    rows.push(spacerRow(h, L));
+    rows.push(seqRow(h, L, primerLen, p, "reverse 3′→5′", true));
+    ["frame −1", "frame −2", "frame −3"].forEach(function (lab) { rows.push(blankAaRow(h, L, lab)); });
+    return h("table", { class: "scaffold" }, [h("tbody", {}, rows)]);
+  }
+
+  function rulerRow(h, L) {
+    var cells = [h("th", { class: "rowlab" }, [""])];
+    for (var c = 0; c < L; c++) cells.push(h("td", { class: "ruler" }, [c % 5 === 0 ? String(c) : ""]));
+    return h("tr", {}, cells);
+  }
+  function blankAaRow(h, L, lab) {
+    var cells = [h("th", { class: "rowlab" }, [lab])];
+    for (var c = 0; c < L; c++) cells.push(h("td", { class: (c % 3 === 0 ? "grp" : "") }, [""]));
+    return h("tr", { class: "aa-row" }, cells);
+  }
+  function seqRow(h, L, primerLen, p, lab, reverse) {
+    var cells = [h("th", { class: "rowlab" }, [lab])];
+    for (var c = 0; c < L; c++) {
+      var known = "", cls = "write";
+      if (c < primerLen) { known = reverse ? COMP[p.forwardPrimer[c]] : p.forwardPrimer[c]; cls = "primer"; }
+      else if (c >= L - primerLen) {
+        var b = p.reversePrimer[c - (L - primerLen)];
+        known = reverse ? COMP[b] : b; cls = "primer";
+      }
+      cells.push(h("td", { class: cls }, [known ? known.toUpperCase() : ""]));
+    }
+    return h("tr", {}, cells);
+  }
+  function writeRow(h, L, lab) {
+    var cells = [h("th", { class: "rowlab" }, [lab])];
+    for (var c = 0; c < L; c++) cells.push(h("td", { class: "write" }, [""]));
+    return h("tr", {}, cells);
+  }
+  function spacerRow(h, L) {
+    var cells = [h("th", { class: "rowlab" }, [""])];
+    for (var c = 0; c < L; c++) cells.push(h("td", {}, [""]));
+    return h("tr", { class: "spacer" }, cells);
+  }
+
+  // Solution alignment: each read placed at its true position and orientation.
+  function buildSolutionAlignment(h, L, primerLen, p) {
+    var rows = [rulerRow(h, L), seqRow(h, L, primerLen, p, "forward 5′→3′")];
+    p.reads.slice().sort(function (a, b) { return a.truePos - b.truePos; }).forEach(function (r) {
+      var displayed = r.trueReverse ? jsRevComp(r.bases) : r.bases.slice();
+      var cells = [h("th", { class: "rowlab" }, [(r.trueReverse ? "⟲ " : "") + "read"])];
+      for (var c = 0; c < L; c++) {
+        var inRead = c >= r.truePos && c < r.truePos + r.bases.length;
+        var base = inRead ? displayed[c - r.truePos] : "";
+        var mism = inRead && base !== p.genome[c];
+        cells.push(h("td", { class: inRead ? (mism ? "primer" : "write") : "", style: mism ? "background:#f6d4d8" : "" }, [base ? base.toUpperCase() : ""]));
+      }
+      rows.push(h("tr", {}, cells));
+    });
+    var consCells = [h("th", { class: "rowlab" }, ["consensus"])];
+    for (var c2 = 0; c2 < L; c2++) consCells.push(h("td", { class: "write", style: "font-weight:700" }, [p.genome[c2].toUpperCase()]));
+    rows.push(spacerRow(h, L));
+    rows.push(h("tr", {}, consCells));
+    return h("table", { class: "scaffold" }, [h("tbody", {}, rows)]);
+  }
+
+  function printCodeGrid(h) {
+    // Ordered so each row of four is one codon family (same first two bases).
+    var codons = [
+      "TTT F", "TTC F", "TTA L", "TTG L", "CTT L", "CTC L", "CTA L", "CTG L",
+      "ATT I", "ATC I", "ATA I", "ATG M", "GTT V", "GTC V", "GTA V", "GTG V",
+      "TCT S", "TCC S", "TCA S", "TCG S", "CCT P", "CCC P", "CCA P", "CCG P",
+      "ACT T", "ACC T", "ACA T", "ACG T", "GCT A", "GCC A", "GCA A", "GCG A",
+      "TAT Y", "TAC Y", "TAA *", "TAG *", "CAT H", "CAC H", "CAA Q", "CAG Q",
+      "AAT N", "AAC N", "AAA K", "AAG K", "GAT D", "GAC D", "GAA E", "GAG E",
+      "TGT C", "TGC C", "TGA *", "TGG W", "CGT R", "CGC R", "CGA R", "CGG R",
+      "AGT S", "AGC S", "AGA R", "AGG R", "GGT G", "GGC G", "GGA G", "GGG G"
+    ];
+    return h("div", { class: "print-code" }, codons.map(function (c) {
+      var pr = c.split(" ");
+      return h("div", { class: "codon" + (pr[1] === "*" ? " stopc" : pr[0] === "ATG" ? " startc" : "") },
+        [h("b", {}, [pr[0]]), h("span", {}, [pr[1]])]);
+    }));
+  }
+  function printIupac(h) {
+    var iupac = [["R", "A/G"], ["Y", "C/T"], ["S", "C/G"], ["W", "A/T"], ["K", "G/T"], ["M", "A/C"],
+      ["B", "C/G/T"], ["D", "A/G/T"], ["H", "A/C/T"], ["V", "A/C/G"], ["N", "any base"]];
+    return h("table", { class: "print-iupac" }, [h("tbody", {}, iupac.map(function (r) {
+      return h("tr", {}, [h("td", {}, [r[0]]), h("td", {}, [r[1]])]);
+    }))]);
+  }
+
   function btn(h, label, onclick, cls) {
     var b = h("button", { class: "btn " + (cls || "") }, [label]);
     b.onclick = onclick;
@@ -555,6 +803,7 @@
   window.Game = {
     renderPlay: renderPlay,
     renderCreate: renderCreate,
+    renderPrint: renderPrint,
     aaName: aaName
   };
 })();
