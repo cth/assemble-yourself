@@ -263,22 +263,30 @@ main { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 28px 24
 .paper .story b { color: #0d1a26; }
 .paper .highlight { background: #fff2c2; padding: 1px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 1px; }
 
-.cutouts { display: flex; flex-wrap: wrap; gap: 12px 16px; margin-top: 10px; }
-.cutout { border: 1px dashed #99a; padding: 8px 6px 4px; border-radius: 4px; }
-.cutout .cut-label { font-size: 10px; color: #889; margin-bottom: 3px; font-family: var(--mono); }
-.cutout .cut-cells { display: flex; }
-.cutout .cut-cells span { width: 22px; height: 26px; border: 1px solid #14212e; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-weight: 700; font-size: 13px; margin-left: -1px; }
+/* One shared cell size drives BOTH the scaffold columns and the cut-out reads,
+   so a cut strip lines up exactly, column for column, on the board. */
+.paper { --pcw: 20px; --prow: 24px; }
+
+.cutouts { display: flex; flex-wrap: wrap; gap: 14px 18px; margin-top: 10px; }
+.cutout { border: 1px dashed #99a; padding: 8px 8px 6px; border-radius: 4px; }
+.cutout .cut-label { font-size: 10px; color: #889; margin-bottom: 4px; font-family: var(--mono); }
 
 .scaffold-wrap { overflow-x: auto; }
-table.scaffold { border-collapse: collapse; margin-top: 8px; }
-table.scaffold td, table.scaffold th { border: 1px solid #b9c2cc; width: 18px; height: 20px; text-align: center; font-family: var(--mono); font-size: 11px; padding: 0; }
-table.scaffold th.rowlab { width: auto; min-width: 108px; border: none; text-align: right; padding-right: 10px; font-weight: 600; font-size: 11px; color: #445; white-space: nowrap; }
+table.scaffold, table.cutstrip { border-collapse: collapse; margin-top: 8px; }
+table.scaffold td, table.scaffold th, table.cutstrip td {
+  border: 1px solid #b9c2cc; width: var(--pcw); min-width: var(--pcw); max-width: var(--pcw);
+  height: 20px; text-align: center; font-family: var(--mono); font-size: 12px; padding: 0; box-sizing: border-box;
+}
+table.scaffold th.rowlab { width: auto; min-width: 108px; max-width: none; border: none; text-align: right; padding-right: 10px; font-weight: 600; font-size: 11px; color: #445; white-space: nowrap; }
 table.scaffold td.ruler { border: none; color: #889; font-size: 9px; height: 14px; }
-table.scaffold td.primer { background: #e7edf3; font-weight: 700; }
-table.scaffold td.write { height: 24px; }
-table.scaffold tr.aa-row td { height: 22px; }
+table.scaffold td.primer, table.cutstrip td.primer { background: #e7edf3; font-weight: 700; }
+table.scaffold td.write, table.scaffold tr.aa-row td { height: var(--prow); }
 table.scaffold tr.spacer td { border: none; height: 6px; }
 table.scaffold td.grp { border-left: 2px solid #8a97a5; }
+
+/* Read strips: identical column pitch to the scaffold, darker border, taller
+   to match the alignment rows so a placed strip sits neatly in a row. */
+table.cutstrip td { border-color: #14212e; height: var(--prow); font-weight: 700; }
 
 .print-code { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; font-family: var(--mono); }
 .print-code .codon { display: flex; justify-content: space-between; background: #eef2f6; padding: 3px 7px; border-radius: 4px; font-size: 11px; color: #223; }

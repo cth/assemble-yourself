@@ -640,9 +640,11 @@
       ]),
       h("h2", {}, ["Reads — cut these out"]),
       h("div", { class: "cutouts" }, p.reads.map(function (r, i) {
+        // Same table geometry as the scaffold, so cut strips line up exactly.
+        var tds = r.bases.map(function (b) { return h("td", {}, [b.toUpperCase()]); });
         return h("div", { class: "cutout" }, [
           h("div", { class: "cut-label" }, ["read " + (i + 1)]),
-          h("div", { class: "cut-cells" }, r.bases.map(function (b) { return h("span", {}, [b.toUpperCase()]); }))
+          h("table", { class: "cutstrip" }, [h("tbody", {}, [h("tr", {}, tds)])])
         ]);
       }))
     ]);
