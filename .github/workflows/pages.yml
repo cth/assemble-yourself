@@ -1,8 +1,8 @@
 name: Deploy web game to GitHub Pages
 
-# Publishes the static game in docs/ to GitHub Pages on every push to the
-# default branch. In the repository settings, set Pages -> Build and deployment
-# -> Source to "GitHub Actions" for this workflow to take effect.
+# Publishes the static game in docs/ to the `gh-pages` branch, which the
+# repository serves via Pages ("Deploy from a branch" -> gh-pages). Runs on
+# every push to the default branch that touches the site, and on demand.
 
 on:
   push:
@@ -11,9 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -22,14 +20,21 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish docs/ to the gh-pages branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          site="$(mktemp -d)"
+          cp -R docs/. "$site/"
+          touch "$site/.nojekyll"
+          cd "$site"
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b gh-pages
+          git add -A
+          git commit -q -m "Deploy ${GITHUB_SHA} to Pages"
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages

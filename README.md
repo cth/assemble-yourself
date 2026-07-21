@@ -66,12 +66,15 @@ Serve the `docs/` folder over HTTP (opening `index.html` from disk also works):
 Publishing with GitHub Pages
 ----------------------------
 
-This repository ships a workflow (`.github/workflows/pages.yml`) that deploys the
-`docs/` folder to GitHub Pages. After merging, enable it once under
-**Settings → Pages → Build and deployment → Source = GitHub Actions**. The site
-then updates automatically on every push. (Alternatively, choose
-**Deploy from a branch** and point Pages at the `docs/` folder of the default
-branch.)
+This repository ships a workflow (`.github/workflows/pages.yml`) that builds the
+`docs/` folder and pushes it to a `gh-pages` branch on every push to the default
+branch. Set **Settings → Pages → Build and deployment → Source = Deploy from a
+branch**, and pick the `gh-pages` branch with the `/ (root)` folder. The site
+then updates automatically whenever the site changes.
+
+(If you would rather use the newer GitHub-Actions deployment, set Source to
+**GitHub Actions** and replace the workflow's publish step with the
+`actions/upload-pages-artifact` + `actions/deploy-pages` actions.)
 
 
 Running the program
