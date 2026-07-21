@@ -76,6 +76,21 @@ then updates automatically whenever the site changes.
 **GitHub Actions** and replace the workflow's publish step with the
 `actions/upload-pages-artifact` + `actions/deploy-pages` actions.)
 
+Publishing to itch.io
+---------------------
+
+The game is also packaged for [itch.io](https://itch.io) as an HTML5 game. The
+workflow `.github/workflows/itch-zip.yml` builds a zip with `index.html` at the
+root (the layout itch.io expects) and uploads it as a downloadable workflow
+artifact; it also attaches the zip to any published GitHub Release.
+
+To get the zip: open the **Actions** tab, run **Build itch.io zip** (or publish
+a release), then download the `assemble-yourself-web` artifact. On itch.io,
+create a new project, set **Kind of project = HTML**, upload the zip, tick
+**This file will be played in the browser**, and set a viewport of roughly
+1280×800. Everything is self-contained (the Prolog engine is bundled), so it
+runs offline inside itch.io's iframe.
+
 
 Running the program
 ===================

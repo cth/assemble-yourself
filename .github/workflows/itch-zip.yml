@@ -1,0 +1,45 @@
+name: Build itch.io zip
+
+# Packages the web game into a zip with index.html at the root — the layout
+# itch.io expects for an HTML5 game. The zip is uploaded as a workflow artifact
+# you can download, and is also attached to any published GitHub Release.
+#
+# Run it manually from the Actions tab (Run workflow), or it fires when a
+# release is published.
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the itch.io zip (index.html at the root)
+        run: |
+          set -e
+          cd docs
+          zip -r -X ../assemble-yourself-web.zip . \
+            -x '.nojekyll' '.DS_Store' '*/.DS_Store'
+          cd ..
+          echo "Contents:"
+          unzip -l assemble-yourself-web.zip
+
+      - name: Upload zip as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: assemble-yourself-web
+          path: assemble-yourself-web.zip
+          if-no-files-found: error
+
+      - name: Attach zip to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.event.release.tag_name }}" assemble-yourself-web.zip --clobber
